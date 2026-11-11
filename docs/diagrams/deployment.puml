@@ -1,0 +1,74 @@
+@startuml
+top to bottom direction
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam nodeBackgroundColor white
+skinparam artifactBackgroundColor white
+skinparam databaseBackgroundColor white
+skinparam cloudBackgroundColor white
+skinparam storageBackgroundColor white
+title BrewLite — Sơ đồ triển khai dự kiến trên AWS
+
+node "Local — máy thành viên" as Local {
+  artifact "Docker Compose\ndb → migrate → api → web" as LocalApp
+}
+node "CI/CD — GitHub" as CI {
+  artifact "GitHub Actions\nLint → Test → Build → Image → Deploy" as Pipeline
+  database "Database test riêng" as TestDB
+  cloud "GHCR\nDocker image: tag SHA / phiên bản" as Registry
+}
+node "Thiết bị người dùng" as Client {
+  artifact "Trình duyệt / PWA" as Browser
+}
+cloud "Duck DNS\nSubdomain trỏ tới IP public" as DNS
+node "AWS — EC2 Ubuntu (production dự kiến)" as EC2 {
+  node "Docker Compose" as Compose {
+    node "Caddy\nHTTPS :443 / HTTP :80" as Caddy
+    node "Next.js Web + BFF\n:3000 nội bộ" as Web
+    node "NestJS API\n:3001 nội bộ\n/health cần bổ sung" as API
+    artifact "Job migration\nchạy trước cập nhật API" as Migrate
+    database "PostgreSQL\n:5432 nội bộ" as DB
+    storage "Volume dữ liệu" as Disk
+  }
+  artifact "Cấu hình và secret runtime\nEC2: cấp qua môi trường Compose" as Config
+  artifact "Docker logs\nstdout/stderr; rotation cần cấu hình" as Logs
+}
+cloud "ZaloPay Sandbox" as ZP
+artifact "Bản sao lưu database\nvị trí cần xác định" as Backup
+Local -[hidden]right-> CI
+Pipeline --> TestDB : Kiểm thử
+Pipeline --> Registry : Push image
+Pipeline ..> EC2 : SSH :22; cập nhật Compose
+Pipeline ..> Caddy : HTTPS :443\nhealth / smoke sau deploy
+EC2 ..> Registry : Pull image
+Browser ..> DNS : Tra cứu DNS
+note right of DNS
+  Bản ghi trỏ tới IP public EC2.
+  DNS không chuyển tiếp HTTP.
+end note
+Browser --> Caddy : HTTPS :443
+Caddy --> Web : HTTP :3000\nWeb / BFF
+Caddy --> API : HTTP :3001\nAPI public / health / callback
+Web --> API : HTTP :3001 nội bộ\nrewrites / BFF
+Migrate --> DB : Migration
+API --> DB : PostgreSQL :5432
+Config ..> Web : env
+Config ..> API : env / secret
+Config ..> Migrate : DATABASE_URL
+Caddy ..> Logs
+Web ..> Logs
+API ..> Logs
+DB -- Disk
+DB ..> Backup : Sao lưu / khôi phục
+API --> ZP : HTTPS: tạo / hỏi kết quả
+ZP --> Caddy : Callback HTTPS
+Browser --> ZP : Thanh toán thử
+legend bottom
+  Hướng nền tảng đã chốt; tài nguyên và URL production chưa kiểm chứng.
+  CI giữ secret SSH/registry; runtime secret chỉ cấp cho dịch vụ cần dùng.
+  Các tuyến public/prefix cụ thể chờ cấu hình Caddy; không public cổng DB.
+  Health endpoint, log rotation và nơi lưu backup cần hiện thực.
+endlegend
+@enduml

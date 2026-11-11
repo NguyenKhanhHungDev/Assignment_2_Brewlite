@@ -1,0 +1,49 @@
+@startuml
+top to bottom direction
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam componentBackgroundColor white
+skinparam packageBackgroundColor white
+skinparam databaseBackgroundColor white
+skinparam cloudBackgroundColor white
+skinparam nodesep 35
+skinparam ranksep 45
+title BrewLite — Kiến trúc phân lớp
+actor "Khách hàng / Admin" as User
+package "Next.js Web" {
+  component "Giao diện Web" as UI
+  component "Chuyển tiếp API công khai\nNext.js rewrites" as Proxy
+  component "BFF và phiên đăng nhập" as BFF
+  component "PWA (dự kiến)" as PWA #white;line.dashed
+}
+package "NestJS API" {
+  component "API công khai và có phiên\nController / Guard" as Http
+  component "Callback thanh toán\nXác minh dữ liệu và chữ ký" as Callback
+  component "Nghiệp vụ\nAuth, Products, Recipes, Ingredients\nOrders, Payments, Loyalty, Promotions" as Business
+  component "Truy cập dữ liệu\nPrisma / SQL" as Store
+  component "Tích hợp ZaloPay" as Gateway
+  component "Health endpoint (dự kiến)" as Health #white;line.dashed
+}
+component "Job migration" as Migration
+database "PostgreSQL 17" as DB
+cloud "ZaloPay Sandbox" as ZP
+User --> UI : Sử dụng Web
+User --> ZP : Thanh toán thử qua trình duyệt
+UI --> Proxy : API công khai
+UI --> BFF : API có phiên
+UI ..> PWA
+Proxy --> Http : HTTP / JSON
+BFF --> Http : HTTP / JSON\nBearer JWT
+Http --> Business
+ZP --> Callback : Callback
+Callback --> Business : Kết quả hợp lệ
+Business --> Store
+Store --> DB
+Migration --> DB : Migration
+Health ..> Store : Readiness dự kiến
+Business --> Gateway
+Gateway --> ZP : HTTPS: tạo / hỏi kết quả
+@enduml
