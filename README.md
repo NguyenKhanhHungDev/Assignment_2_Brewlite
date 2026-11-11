@@ -11,6 +11,8 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Kiến trúc Task 3.1](docs/architecture/architecture.md)
 - [Triển khai Task 3.2](docs/deployment.md)
 - [Backlog dự kiến](docs/planning/assignment-2-backlog.md)
+- [Hướng dẫn hoàn thành repo](docs/planning/repository-guide.md)
+- [Ma trận truy vết](docs/traceability-matrix.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
 
 Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Mã ứng dụng và hướng dẫn chạy, test, build, deploy sẽ được bổ sung khi thực hiện các Sprint.
