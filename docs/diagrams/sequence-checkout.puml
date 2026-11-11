@@ -1,0 +1,186 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam maxMessageSize 330
+hide footbox
+autonumber
+title Task 2.2 — BrewLite: Đặt và thanh toán đơn hàng
+actor "Khách hàng" as C
+participant "Next.js UI / BFF" as W
+participant "NestJS API" as A
+database "PostgreSQL" as D
+participant "ZaloPay Sandbox" as Z
+activate C
+note over W,A
+  UI gửi request cùng origin; BFF đọc cookie HttpOnly và gắn Bearer JWT.
+  Các đường dẫn dưới đây là route backend; BFF kiểm tra Origin/CSRF khi ghi.
+end note
+== Tạo đơn ==
+C -> W : Xác nhận giỏ, tên người nhận, BREW10 nếu có
+activate W
+W -> A : POST /orders\nJWT; Idempotency-Key: K_order\n{items, recipientName, promoCode?}
+activate A
+A -> A : Kiểm tra JWT/sessionVersion; chuẩn hóa và validate
+break Phiên hoặc dữ liệu không hợp lệ
+  A --> W : 401 hoặc 400
+  W --> C : Đăng nhập/sửa dữ liệu; giữ giỏ
+end
+A -> D : Tìm đơn theo tài khoản + K_order
+activate D
+D --> A : Đơn/hash hiện có hoặc chưa có
+deactivate D
+alt Yêu cầu trùng hợp lệ
+  opt A-06: hash cũ khớp món/mã, đơn chưa có tên
+    A -> D : Transaction bổ sung tên và hash mới đúng một lần
+    D --> A : Đơn cũ đã cập nhật nguyên tử
+  end
+  A --> W : {orderId, status, total}; không giữ thêm kho
+else Cùng key nhưng khác nội dung, không thuộc A-06
+  A --> W : 409 Conflict
+else Yêu cầu mới
+  A -> D : Đọc công thức và nguyên liệu
+  activate D
+  D --> A : Giá, công thức và tồn khả dụng
+  deactivate D
+  A -> A : Tính giá, BREW10 và lượng kho cần giữ;\nkiểm tra dữ liệu trước khi lưu
+  group Transaction tạo đơn và giữ kho
+    A -> D : BEGIN; khóa idempotency; kiểm tra lại key;\nđọc lại công thức, giá và tồn, kiểm soát cập nhật đồng thời
+    D --> A : Dữ liệu hiện tại / đơn đã tạo bởi yêu cầu cạnh tranh
+    A -> A : Nếu có đơn: kiểm tra hash và replay;\nnếu chưa có: kiểm tra lại công thức, giá và lượng kho
+    alt Đã có đơn cùng key do yêu cầu cạnh tranh
+      A -> D : Kết thúc transaction; không tạo/giữ kho thêm
+      A --> W : Trả đơn cũ nếu hash khớp; khác thì 409
+    else Món hợp lệ và đủ nguyên liệu
+      A -> D : Lưu PENDING, tên người nhận, snapshot Recipe/giá/tùy chọn;\ngiữ kho bằng cập nhật có điều kiện; expiresAt = now + 15 phút; COMMIT
+      D --> A : Đơn đã lưu
+      A --> W : {orderId, status, total}
+    else Món sai, thiếu kho hoặc lỗi lưu
+      A -> D : ROLLBACK
+      A --> W : Lỗi; không để đơn/kho giữ dở dang
+    end
+  end
+end
+W --> C : Hiển thị đơn và số tiền chính thức hoặc lỗi
+deactivate A
+deactivate W
+== Tạo giao dịch thanh toán ==
+opt Có đơn và khách chọn tiếp tục thanh toán
+  C -> W : Xác nhận thanh toán
+  activate W
+  W -> A : POST /payments/zalopay/create\nJWT; Idempotency-Key: K_pay; {orderId}
+  activate A
+  A -> A : Kiểm tra JWT, body, chủ đơn
+  break Sai phiên/quyền/dữ liệu
+    A --> W : 401 / 403 / 400 / 404; không tạo giao dịch
+  end
+  A -> D : Transaction khóa đơn; kiểm tra key/nội dung,\ntrạng thái/hạn và giao dịch đang hoạt động;\nnếu được phép: lưu Payment PENDING; COMMIT
+  activate D
+  D --> A : Replay URL / giao dịch được phép tạo / từ chối
+  deactivate D
+  alt Cùng key/nội dung, đã có URL hợp lệ
+    A --> W : 200; URL đã lưu
+  else Xung đột, đang xử lý/chưa rõ hoặc đơn không đủ điều kiện
+    A --> W : Lỗi phù hợp; 409 cho xung đột/đang xử lý
+  else Được phép tạo giao dịch
+    A -> Z : Tạo giao dịch sandbox theo số tiền đơn đã lưu
+    activate Z
+    Z --> A : URL / từ chối rõ / timeout hoặc chưa rõ
+    deactivate Z
+    A -> D : Lưu URL hoặc trạng thái tạo đã biết/chưa rõ
+    activate D
+    D --> A : Đã lưu
+    deactivate D
+    A --> W : 201 + URL khi tạo thành công;\nhoặc lỗi/hướng dẫn kiểm tra lại
+  end
+  W --> C : Hiển thị URL hoặc kết quả tương ứng
+  deactivate A
+  deactivate W
+  opt Có URL và khách thực hiện thanh toán
+    C -> Z : Mở URL và thanh toán thử
+  end
+end
+note over W,Z
+  K_order và K_pay là hai khóa riêng; retry giữ nguyên khóa và nội dung.
+  Gateway từ chối tạo rõ ràng: backend có thể cho thử lại theo điều kiện hợp lệ.
+  Chỉ dùng tên; khóa tên khi đã lưu bản nháp. Không nhận recipientPhone.
+  Gọi HTTPS tới ZaloPay ngoài transaction database.
+  Tạo đơn hoặc quay lại trang chưa chứng minh thanh toán thành công.
+end note
+
+== Xác minh kết quả thanh toán ==
+opt Callback đến tại thời điểm này
+  Z -> A : POST /payments/zalopay/callback {data, mac}
+  activate A
+  A -> A : Xác minh MAC, app_id và payload
+  alt Chữ ký/payload không hợp lệ
+    A --> Z : HTTP 200; return_code=-1; không ghi nhận thành công
+  else Payload hợp lệ
+    A -> D : Transaction khóa và kiểm tra mã/số tiền, trạng thái;\nthành công + còn kho giữ: SUCCESS/PAID, tiêu thụ kho, cộng điểm;\nđã trả kho: RECONCILIATION_REQUIRED; chống xử lý trùng
+    activate D
+    D --> A : Đã áp dụng / đã xử lý / không hợp lệ / lỗi
+    deactivate D
+    A --> Z : HTTP 200; return_code: 1 thành công, 2 đã xử lý,\n-1 không hợp lệ, 0 lỗi cần thử lại
+  end
+  deactivate A
+end
+== Xem và kiểm tra lại kết quả ==
+C -> W : Mở kết quả / kiểm tra lại
+activate W
+W -> A : GET /payments/{orderId}/status; JWT qua BFF
+activate A
+A -> A : Kiểm tra JWT và quyền chủ đơn
+break Sai phiên/quyền hoặc đơn không tồn tại
+  A --> W : 401 / 403 / 404
+  W --> C : Báo lỗi; không tiết lộ dữ liệu đơn người khác
+end
+A -> D : Đọc trạng thái đơn và lần thanh toán mới nhất
+activate D
+D --> A : orderStatus, latestPayment
+deactivate D
+opt Giao dịch PENDING đủ điều kiện query
+  A -> Z : Query bằng transactionRef
+  activate Z
+  Z --> A : Thành công / thất bại xác định / chưa rõ
+  deactivate Z
+  A -> A : Query theo mã giao dịch đã lưu; dùng số tiền\ngateway trả về nếu có, nếu thiếu dùng số tiền dự kiến đã lưu
+  alt Thành công hợp lệ và phần kho giữ còn hợp lệ
+    A -> D : BEGIN; khóa đơn/giao dịch; kiểm tra đã xử lý;\nPayment SUCCESS, Order PAID; tiêu thụ kho giữ;\ncộng floor(total/10000) điểm đúng một lần; COMMIT
+    D --> A : Kết quả đã lưu hoặc đã xử lý trước đó
+  else Thất bại xác định hợp lệ
+    A -> D : Transaction ghi FAILED/PAYMENT_FAILED;\ntrả nguyên liệu giữ đúng một lần
+    D --> A : Kết quả đã lưu
+  else Thành công sau khi kho giữ đã được trả
+    A -> D : Transaction ghi RECONCILIATION_REQUIRED;\nkhông tự PAID/trừ lại kho/cộng điểm
+    D --> A : Cần đối soát
+  else Số tiền không khớp, chưa rõ hoặc lỗi kết nối
+    A -> A : Không ghi nhận thành công; giữ trạng thái chưa xác định;\nkhông tự tạo giao dịch khác
+  end
+  A -> D : Đọc lại trạng thái sau xử lý
+  D --> A : Trạng thái hiện hành
+end
+A --> W : {orderId, orderStatus, latestPayment}
+deactivate A
+opt Cần chi tiết các lần thử và đồng hồ
+  W -> A : GET /payments/{orderId}/details; JWT qua BFF
+  activate A
+  A -> A : Kiểm tra phiên và chủ đơn
+  A -> D : Đọc chi tiết đơn và các lần thử thanh toán
+  activate D
+  D --> A : Dữ liệu được phép trả
+  deactivate D
+  A --> W : Chi tiết, expiresAt, serverTime; không trả secret/MAC
+  deactivate A
+end
+W --> C : Thành công / thất bại / đang kiểm tra / cần đối soát;\nhướng dẫn theo dõi đơn để nhận món tại quầy
+deactivate W
+note over W,Z
+  Callback có thể đến trước/sau query; dùng cùng quy tắc transaction và chống trùng.
+  Return URL hoặc bộ đếm UI không quyết định thành công/thất bại.
+  Tác vụ nền kiểm tra/đối soát; chỉ hủy đơn hết hạn khi chưa trả tiền và không còn giao dịch chưa rõ.
+  Hủy/trả kho đúng một lần; còn giao dịch chưa rõ thì giữ kho và tiếp tục đối soát.
+  Hết hạn theo đồng hồ nhưng kho vẫn được giữ: kết quả gateway hợp lệ vẫn được xử lý theo backend.
+  HTTP 200 callback không tự chứng minh nghiệp vụ thành công.
+end note
+deactivate C
+@enduml

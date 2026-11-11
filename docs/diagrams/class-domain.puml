@@ -1,0 +1,152 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 45
+skinparam ranksep 55
+hide methods
+hide circle
+title Task 2.3 — BrewLite: Mô hình lớp domain
+
+class User {
+ id: Int
+ email: String {unique}
+ name: String?
+ passwordHash: String
+ role: String
+ sessionVersion: Int
+ loyaltyPoints: Int
+}
+class Order {
+ id: Int
+ status: OrderStatus
+ total: Int
+ discount: Int
+ promoCode: String?
+ recipientName: String?
+ loyaltyAwarded: Boolean
+ idempotencyKey: String?
+ idempotencyHash: String?
+ expiresAt: DateTime?
+ createdAt: DateTime
+ cancellationReason: String?
+ cancelledAt: DateTime?
+}
+class OrderItem {
+ id: Int
+ recipeName: String?
+ quantity: Int
+ size: String
+ toppings: Json
+ sugarLevel: Int?
+ iceLevel: String?
+ note: String?
+ unitPrice: Int
+ subtotal: Int
+}
+class Product <<legacy>> {
+ id: Int
+ name: String
+ price: Int
+ imageUrl: String
+ stock: Int
+ version: Int
+}
+class Recipe {
+ id: Int
+ name: String
+ price: Int
+ imageUrl: String
+ category: ProductCategory
+ isActive: Boolean
+}
+class Payment {
+ id: Int
+ provider: String
+ transactionRef: String? {unique}
+ amount: Int
+ method: String
+ status: PaymentStatus
+ creationStatus: String
+ idempotencyKey: String?
+ requestHash: String?
+ paidAt: DateTime?
+ createdAt: DateTime
+ adminNote: String?
+ adminNoteUpdatedAt: DateTime?
+}
+User "1" -down- "0..*" Order : đặt
+Order "1" *-down- "1..*" OrderItem : chứa
+Order "1" -right- "0..*" Payment : các lần thử
+Product "0..1" -- "0..*" OrderItem : tham chiếu cũ
+Recipe "0..1" -- "0..*" OrderItem : món công thức
+class Promotion <<domain concept>> {
+ code: String
+ percentOff: Int
+}
+class LoyaltyTransaction <<domain concept>> {
+ id: Int
+ points: Int
+ type: LoyaltyTransactionType
+ createdAt: DateTime
+}
+enum LoyaltyTransactionType {
+ EARN
+}
+User "1" -- "0..*" LoyaltyTransaction : nhận điểm
+Order "1" -- "0..1" LoyaltyTransaction : tích một lần
+Promotion "0..1" -- "0..*" Order : áp dụng qua promoCode
+LoyaltyTransaction ..> LoyaltyTransactionType
+Promotion -[hidden]right-> LoyaltyTransaction
+enum OrderStatus {
+ PENDING
+ PAID
+ PREPARING
+ READY
+ COMPLETED
+ PAYMENT_FAILED
+ CANCELLED
+}
+enum PaymentStatus {
+ PENDING
+ SUCCESS
+ FAILED
+ CANCELLED
+ RECONCILIATION_REQUIRED
+}
+enum ProductCategory {
+ COFFEE
+ TEA
+ OTHER
+}
+Order ..> OrderStatus
+Payment ..> PaymentStatus
+Recipe ..> ProductCategory
+note bottom of OrderItem
+  Quy tắc domain: mỗi dòng dùng Product hoặc Recipe.
+  Schema hiện cho phép hai khóa nullable; chưa có CHECK XOR.
+  Recipe: lưu snapshot tên, giá và lựa chọn.
+  Đơn Product cũ có thể đọc tên Product hiện tại.
+end note
+note bottom of Order
+  Backend tính tiền VND; BREW10 giảm 10%.
+  Chỉ dùng tên; nullable cho đơn cũ.
+  Không có SĐT trong hợp đồng ứng dụng.
+  Trạng thái DB nguồn là String;
+  enum là miền giá trị nghiệp vụ.
+end note
+note bottom of LoyaltyTransaction
+  Lớp domain theo đề; chưa có bảng riêng.
+  Source: User.loyaltyPoints và
+  Order.loyaltyAwarded chống cộng trùng.
+  Chỉ EARN, không đổi/điều chỉnh điểm.
+end note
+legend bottom
+  Mô hình rút gọn; không thay thế ERD/schema hay tuyên bố mọi lớp đều có bảng.
+  Quan hệ domain; FK được lược bỏ. Một số ràng buộc chưa có CHECK DB.
+  FR-12–FR-22, FR-27, FR-29–FR-30; source BrewLite-SE d15283a.
+  Kho và lịch sử biến động thuộc mô hình mở rộng; xem schema.prisma.
+  Chi tiết actor hủy đơn/ghi chú và metadata khác xem schema.prisma.
+endlegend
+@enduml
