@@ -1,0 +1,58 @@
+@startuml
+top to bottom direction
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam nodesep 35
+skinparam ranksep 55
+skinparam ArrowColor #475569
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #475569
+}
+title BrewLite - Use-case Đặt hàng và Thanh toán
+
+actor "Khách hàng" as Customer
+actor "ZaloPay Sandbox" as ZaloPay
+
+rectangle "Phân hệ Đặt hàng và Thanh toán - BrewLite" {
+  usecase "Áp dụng mã BREW10" as Coupon
+  usecase "UC-05: Đặt đơn" as Order
+  usecase "UC-06: Thanh toán" as Payment
+  usecase "UC-07: Xem giao dịch" as Result
+
+  usecase "Kiểm tra phiên, người nhận\nvà tùy chọn món" as ValidateOrder
+  usecase "Chống tạo đơn trùng" as OrderDedup
+  usecase "Tạo đơn mới" as NewOrder
+  usecase "Tính giá, kiểm tra tồn\nvà giữ nguyên liệu" as Inventory
+  usecase "Lưu thông tin người nhận,\ntên món Recipe, lựa chọn và giá" as Snapshot
+  usecase "Kiểm tra phiên và\nquyền chủ đơn" as Ownership
+  usecase "Kiểm tra điều kiện thanh toán\nvà chống giao dịch trùng" as PaymentCheck
+  usecase "Xử lý giao dịch ZaloPay" as Gateway
+  usecase "Kiểm tra lại kết quả\nvới ZaloPay" as QueryResult
+
+  Coupon .down.> Order : <<extend>>\n[khách nhập mã]
+  Order -[hidden]down-> NewOrder
+  NewOrder -[hidden]down-> Payment
+  Payment -[hidden]down-> Result
+  Inventory -[hidden]right-> Snapshot
+  Order .right.> ValidateOrder : <<include>>
+  Order .right.> OrderDedup : <<include>>
+  NewOrder .up.> Order : <<extend>>\n[yêu cầu mới hợp lệ]
+  NewOrder .right.> Inventory : <<include>>
+  NewOrder .right.> Snapshot : <<include>>
+  Payment .right.> Ownership : <<include>>
+  Payment .right.> PaymentCheck : <<include>>
+  Payment .right.> Gateway : <<include>>
+  Result .right.> Ownership : <<include>>
+  QueryResult .up.> Result : <<extend>>\n[giao dịch PENDING đủ điều kiện kiểm tra]
+}
+
+Customer -right- Order
+Customer -right- Payment
+Customer -right- Result
+Gateway -right- ZaloPay
+QueryResult -right- ZaloPay
+
+@enduml
