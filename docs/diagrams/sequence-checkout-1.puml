@@ -1,0 +1,89 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam maxMessageSize 330
+hide footbox
+autonumber
+title Task 2.2 — BrewLite: Tạo đơn và yêu cầu thanh toán (1/2)
+actor "Khách hàng" as C
+participant "Next.js UI / BFF" as W
+participant "NestJS API" as A
+database "PostgreSQL" as D
+participant "ZaloPay Sandbox" as Z
+note over W,A
+  UI gửi request cùng origin; BFF đọc cookie HttpOnly và gắn Bearer JWT.
+  Các đường dẫn dưới đây là route backend; BFF kiểm tra Origin/CSRF khi ghi.
+end note
+C -> W : Xác nhận giỏ, tên người nhận, BREW10 nếu có
+W -> A : POST /orders\nJWT; Idempotency-Key: K_order\n{items, recipientName, promoCode?}
+A -> A : Kiểm tra JWT/sessionVersion; chuẩn hóa và validate
+break Phiên hoặc dữ liệu không hợp lệ
+  A --> W : 401 hoặc 400
+  W --> C : Đăng nhập/sửa dữ liệu; giữ giỏ
+end
+A -> D : Tìm đơn theo tài khoản + K_order
+D --> A : Đơn/hash hiện có hoặc chưa có
+alt Yêu cầu trùng hợp lệ
+  opt A-06: hash cũ khớp món/mã, đơn chưa có tên
+    A -> D : Transaction bổ sung tên và hash mới đúng một lần
+    D --> A : Đơn cũ đã cập nhật nguyên tử
+  end
+  A --> W : {orderId, status, total}; không giữ thêm kho
+else Cùng key nhưng khác nội dung, không thuộc A-06
+  A --> W : 409 Conflict
+else Yêu cầu mới
+  A -> D : Đọc công thức và nguyên liệu
+  D --> A : Giá, công thức và tồn khả dụng
+  A -> A : Tính giá, BREW10 và lượng kho cần giữ;\nkiểm tra dữ liệu trước khi lưu
+  group Transaction tạo đơn và giữ kho
+    A -> D : BEGIN; khóa idempotency; kiểm tra lại key;\nđọc lại công thức, giá và tồn, kiểm soát cập nhật đồng thời
+    D --> A : Dữ liệu hiện tại / đơn đã tạo bởi yêu cầu cạnh tranh
+    A -> A : Nếu có đơn: kiểm tra hash và replay;\nnếu chưa có: kiểm tra lại công thức, giá và lượng kho
+    alt Đã có đơn cùng key do yêu cầu cạnh tranh
+      A -> D : Kết thúc transaction; không tạo/giữ kho thêm
+      A --> W : Trả đơn cũ nếu hash khớp; khác thì 409
+    else Món hợp lệ và đủ nguyên liệu
+      A -> D : Lưu PENDING, tên người nhận, snapshot Recipe/giá/tùy chọn;\ngiữ kho bằng cập nhật có điều kiện; expiresAt = now + 15 phút; COMMIT
+      D --> A : Đơn đã lưu
+      A --> W : {orderId, status, total}
+    else Món sai, thiếu kho hoặc lỗi lưu
+      A -> D : ROLLBACK
+      A --> W : Lỗi; không để đơn/kho giữ dở dang
+    end
+  end
+end
+W --> C : Hiển thị đơn và số tiền chính thức hoặc lỗi
+opt Có đơn và khách chọn tiếp tục thanh toán
+  C -> W : Xác nhận thanh toán
+  W -> A : POST /payments/zalopay/create\nJWT; Idempotency-Key: K_pay; {orderId}
+  A -> A : Kiểm tra JWT, body, chủ đơn
+  break Sai phiên/quyền/dữ liệu
+    A --> W : 401 / 403 / 400 / 404; không tạo giao dịch
+  end
+  A -> D : Transaction khóa đơn; kiểm tra key/nội dung,\ntrạng thái/hạn và giao dịch đang hoạt động;\nnếu được phép: lưu Payment PENDING; COMMIT
+  D --> A : Replay URL / giao dịch được phép tạo / từ chối
+  alt Cùng key/nội dung, đã có URL hợp lệ
+    A --> W : 200; URL đã lưu
+  else Xung đột, đang xử lý/chưa rõ hoặc đơn không đủ điều kiện
+    A --> W : Lỗi phù hợp; 409 cho xung đột/đang xử lý
+  else Được phép tạo giao dịch
+    A -> Z : Tạo giao dịch sandbox theo số tiền đơn đã lưu
+    Z --> A : URL / từ chối rõ / timeout hoặc chưa rõ
+    A -> D : Lưu URL hoặc trạng thái tạo đã biết/chưa rõ
+    D --> A : Đã lưu
+    A --> W : 201 + URL khi tạo thành công;\nhoặc lỗi/hướng dẫn kiểm tra lại
+  end
+  W --> C : Hiển thị URL hoặc kết quả tương ứng
+  opt Có URL và khách thực hiện thanh toán
+    C -> Z : Mở URL và thanh toán thử
+  end
+end
+note over W,Z
+  K_order và K_pay là hai khóa riêng; retry giữ nguyên khóa và nội dung.
+  Gateway từ chối tạo rõ ràng: backend có thể cho thử lại theo điều kiện hợp lệ.
+  Chỉ dùng tên; khóa tên khi đã lưu bản nháp. Không nhận recipientPhone.
+  Gọi HTTPS tới ZaloPay ngoài transaction database.
+  Hết phần 1: chưa kết luận PAID. Xác minh kết quả ở phần 2.
+end note
+@enduml

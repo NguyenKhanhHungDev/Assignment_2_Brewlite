@@ -1,0 +1,70 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam maxMessageSize 330
+hide footbox
+autonumber
+title Task 2.2 — BrewLite: Xác minh và hiển thị thanh toán (2/2)
+actor "Khách hàng" as C
+participant "Next.js UI / BFF" as W
+participant "NestJS API" as A
+database "PostgreSQL" as D
+participant "ZaloPay Sandbox" as Z
+opt Callback đến tại thời điểm này
+  Z -> A : POST /payments/zalopay/callback {data, mac}
+  A -> A : Xác minh MAC, app_id và payload
+  alt Chữ ký/payload không hợp lệ
+    A --> Z : HTTP 200; return_code=-1; không ghi nhận thành công
+  else Payload hợp lệ
+    A -> D : Transaction khóa và kiểm tra mã/số tiền, trạng thái;\nthành công + còn kho giữ: SUCCESS/PAID, tiêu thụ kho, cộng điểm;\nđã trả kho: RECONCILIATION_REQUIRED; chống xử lý trùng
+    D --> A : Đã áp dụng / đã xử lý / không hợp lệ / lỗi
+    A --> Z : HTTP 200; return_code: 1 thành công, 2 đã xử lý,\n-1 không hợp lệ, 0 lỗi cần thử lại
+  end
+end
+C -> W : Mở kết quả / kiểm tra lại
+W -> A : GET /payments/{orderId}/status; JWT qua BFF
+A -> A : Kiểm tra JWT và quyền chủ đơn
+break Sai phiên/quyền hoặc đơn không tồn tại
+  A --> W : 401 / 403 / 404
+  W --> C : Báo lỗi; không tiết lộ dữ liệu đơn người khác
+end
+A -> D : Đọc trạng thái đơn và lần thanh toán mới nhất
+D --> A : orderStatus, latestPayment
+opt Giao dịch PENDING đủ điều kiện query
+  A -> Z : Query bằng transactionRef
+  Z --> A : Thành công / thất bại xác định / chưa rõ
+  A -> A : Query theo mã giao dịch đã lưu; dùng số tiền\ngateway trả về nếu có, nếu thiếu dùng số tiền dự kiến đã lưu
+  alt Thành công hợp lệ và phần kho giữ còn hợp lệ
+    A -> D : BEGIN; khóa đơn/giao dịch; kiểm tra đã xử lý;\nPayment SUCCESS, Order PAID; tiêu thụ kho giữ;\ncộng floor(total/10000) điểm đúng một lần; COMMIT
+    D --> A : Kết quả đã lưu hoặc đã xử lý trước đó
+  else Thất bại xác định hợp lệ
+    A -> D : Transaction ghi FAILED/PAYMENT_FAILED;\ntrả nguyên liệu giữ đúng một lần
+    D --> A : Kết quả đã lưu
+  else Thành công sau khi kho giữ đã được trả
+    A -> D : Transaction ghi RECONCILIATION_REQUIRED;\nkhông tự PAID/trừ lại kho/cộng điểm
+    D --> A : Cần đối soát
+  else Số tiền không khớp, chưa rõ hoặc lỗi kết nối
+    A -> A : Không ghi nhận thành công; giữ trạng thái chưa xác định;\nkhông tự tạo giao dịch khác
+  end
+  A -> D : Đọc lại trạng thái sau xử lý
+  D --> A : Trạng thái hiện hành
+end
+A --> W : {orderId, orderStatus, latestPayment}
+opt Cần chi tiết các lần thử và đồng hồ
+  W -> A : GET /payments/{orderId}/details; JWT qua BFF
+  A -> A : Kiểm tra phiên và chủ đơn
+  A -> D : Đọc chi tiết đơn và các lần thử thanh toán
+  D --> A : Dữ liệu được phép trả
+  A --> W : Chi tiết, expiresAt, serverTime; không trả secret/MAC
+end
+W --> C : Thành công / thất bại / đang kiểm tra / cần đối soát;\nhướng dẫn theo dõi đơn để nhận món tại quầy
+note over W,Z
+  Callback có thể đến trước/sau query; dùng cùng quy tắc transaction và chống trùng.
+  Return URL hoặc bộ đếm UI không quyết định thành công/thất bại.
+  Tác vụ nền kiểm tra/đối soát; chỉ hủy đơn hết hạn khi chưa trả tiền và không còn giao dịch chưa rõ.
+  Hủy/trả kho đúng một lần; còn giao dịch chưa rõ thì giữ kho và tiếp tục đối soát.
+  Hết hạn theo đồng hồ nhưng kho vẫn được giữ: kết quả gateway hợp lệ vẫn được xử lý theo backend.
+  HTTP 200 callback không tự chứng minh nghiệp vụ thành công.
+end note
+@enduml

@@ -1,0 +1,169 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 15
+skinparam shadowing false
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #475569
+skinparam ArrowColor #475569
+title Task 2.1 — Luồng đặt và thanh toán đơn hàng
+
+|Khách hàng|
+start
+:Truy cập menu;
+|Next.js Web|
+:Hiển thị menu và tùy chọn món;
+|Khách hàng|
+:Chọn món, size, topping,\nđường/đá và ghi chú;
+:Thêm vào giỏ và chọn đặt đơn;
+|Next.js Web|
+:Hiển thị giỏ và kiểm tra phiên;
+if (Có phiên đăng nhập?) then (chưa)
+  :Yêu cầu đăng nhập; giữ giỏ hàng;
+  |Khách hàng|
+  :Đăng nhập hoặc đăng ký,\nsau đó đăng nhập;
+  |Next.js Web|
+  :Gửi thông tin đăng nhập;
+  |NestJS API & PostgreSQL|
+  :Xác thực thông tin;
+  if (Đăng nhập thành công?) then (không)
+    |Next.js Web|
+    :Hiển thị lỗi đăng nhập;
+    stop
+  else (có)
+    |Next.js Web|
+    :Tiếp tục với giỏ hàng đã giữ;
+  endif
+else (có)
+endif
+
+|Khách hàng|
+:Nhập tên người nhận\nvà mã BREW10 nếu có;
+:Xem lại giỏ và xác nhận đặt đơn;
+|Next.js Web|
+:Gửi yêu cầu tạo đơn;
+|NestJS API & PostgreSQL|
+:Kiểm tra phiên, tên người nhận,\nmón, số lượng và mã giảm giá;
+if (Thông tin hợp lệ?) then (không)
+  |Next.js Web|
+  :Báo lỗi; giữ giỏ để khách sửa;
+  stop
+else (có)
+endif
+
+|NestJS API & PostgreSQL|
+:Kiểm tra yêu cầu tạo đơn trùng;
+if (Yêu cầu đã có đơn?) then (có)
+  if (Nội dung được chấp nhận?) then (có)
+    :Trả đơn cũ; không giữ thêm kho;
+  else (không)
+    |Next.js Web|
+    :Báo yêu cầu xung đột;
+    stop
+  endif
+else (chưa)
+  |NestJS API & PostgreSQL|
+  :Tính giá và kiểm tra nguyên liệu;
+  if (Còn đủ nguyên liệu?) then (không)
+    |Next.js Web|
+    :Báo hết hàng; giữ giỏ để khách sửa;
+    stop
+  else (có)
+    |NestJS API & PostgreSQL|
+    :Tạo đơn PENDING và giữ nguyên liệu\ntrong cùng transaction; hạn ban đầu 15 phút;
+    if (Tạo đơn thành công?) then (không)
+      :Hủy các thay đổi dở dang;
+      |Next.js Web|
+      :Hiển thị lỗi tạo đơn;
+      stop
+    else (có)
+    endif
+  endif
+endif
+
+|Next.js Web|
+:Hiển thị mã đơn và số tiền chính thức;
+|Khách hàng|
+if (Chọn thanh toán?) then (chưa)
+  :Có thể mở lại đơn sau;
+  stop
+else (có)
+endif
+|Next.js Web|
+:Gửi yêu cầu thanh toán;
+|NestJS API & PostgreSQL|
+:Kiểm tra chủ đơn, điều kiện\nvà chống tạo giao dịch trùng;
+if (Được phép thanh toán?) then (không)
+  |Next.js Web|
+  :Báo lý do; hướng dẫn kiểm tra đơn;
+  stop
+else (có)
+endif
+|NestJS API & PostgreSQL|
+:Tạo hoặc lấy lại giao dịch ZaloPay Sandbox;
+if (Có đường dẫn thanh toán?) then (không)
+  :Tiếp tục kiểm tra nếu kết quả chưa rõ;
+  |Next.js Web|
+  :Báo lỗi hoặc đang kiểm tra kết quả;\nchỉ thử lại khi máy chủ cho phép;
+  stop
+else (có)
+endif
+|Next.js Web|
+:Hiển thị đường dẫn thanh toán;
+|Khách hàng|
+:Mở đường dẫn và thanh toán thử;
+|ZaloPay Sandbox|
+:Xử lý giao dịch thanh toán;
+|NestJS API & PostgreSQL|
+:Nhận thông báo hoặc kiểm tra kết quả\nvới ZaloPay; xác minh dữ liệu;
+if (Kết quả nhận được không hợp lệ?) then (có)
+  :Từ chối thông báo; không đổi\ntrạng thái đơn, kho hoặc điểm;
+  stop
+else (không / chưa có kết quả)
+endif
+
+if (Kết quả thanh toán?) then (thành công)
+  if (Đơn đủ điều kiện và kho còn giữ?) then (có)
+    :Xác nhận thanh toán, chuyển đơn PAID;\ntiêu thụ kho và cộng điểm một lần;
+    |Next.js Web|
+    :Hiển thị kết quả và trạng thái đơn;
+    |Khách hàng|
+    :Xem kết quả và theo dõi tiến độ;
+    |Admin|
+    :Cập nhật đơn đang chuẩn bị (PREPARING);
+    :Chuẩn bị món và cập nhật sẵn sàng (READY);
+    |Khách hàng|
+    :Nhận món tại quầy;
+    |Admin|
+    :Cập nhật đơn hoàn thành (COMPLETED);
+    stop
+  elseif (Kho đã được trả?) then (có)
+    |NestJS API & PostgreSQL|
+    :Chuyển giao dịch sang cần đối soát;\nkhông tự chuyển đơn PAID hoặc cộng điểm;
+    |Next.js Web|
+    :Hiển thị kết quả cần đối soát;
+    stop
+  else (trường hợp khác)
+    |NestJS API & PostgreSQL|
+    :Kiểm tra trạng thái đơn;\nkhông tự xác nhận thanh toán;
+    stop
+  endif
+elseif (Thất bại xác định?) then (có)
+  |NestJS API & PostgreSQL|
+  :Ghi nhận thanh toán thất bại;\ntrả nguyên liệu đang giữ đúng một lần;
+  |Next.js Web|
+  :Hiển thị thông báo thất bại;
+  stop
+else (chưa rõ)
+  |NestJS API & PostgreSQL|
+  :Giữ trạng thái và nguyên liệu;\ntiếp tục kiểm tra kết quả với ZaloPay;
+  |Next.js Web|
+  :Hiển thị trạng thái đang kiểm tra;
+  stop
+endif
+
+legend bottom
+  Đơn chưa thanh toán được xử lý hết hạn bởi hệ thống.
+  Còn giao dịch chưa rõ: giữ nguyên liệu và tiếp tục kiểm tra.
+  Gửi lặp không tạo đơn, tiêu thụ kho hoặc cộng điểm thêm.
+endlegend
+@enduml
