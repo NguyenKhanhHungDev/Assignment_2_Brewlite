@@ -1,0 +1,58 @@
+@startuml
+left to right direction
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #475569
+}
+title BrewLite - Use-case tổng quát
+
+actor "Khách chưa đăng nhập" as Guest
+actor "Khách đã đăng nhập" as Customer
+actor "Admin" as Admin
+actor "ZaloPay Sandbox" as ZaloPay
+
+rectangle "Hệ thống BrewLite" {
+  usecase "UC-01: Xem và tìm món" as UC01
+  usecase "UC-02: Chọn tùy chọn" as UC02
+  usecase "UC-03: Quản lý tài khoản" as UC03
+  usecase "UC-04: Quản lý giỏ" as UC04
+  usecase "UC-05: Đặt đơn" as UC05
+  usecase "UC-06: Thanh toán" as UC06
+  usecase "UC-07: Xem giao dịch" as UC07
+  usecase "UC-08: Xem điểm và hạng" as UC08
+  usecase "UC-09: Theo dõi đơn" as UC09
+  usecase "UC-10: Quản lý đơn" as UC10
+  usecase "UC-11: Quản lý giao dịch" as UC11
+  usecase "UC-12: Quản lý món" as UC12
+  usecase "UC-13: Quản lý nguyên liệu" as UC13
+}
+
+Guest -- UC01
+Guest -- UC02
+Guest -- UC03
+Guest -- UC04
+Customer -- UC01
+Customer -- UC02
+Customer -- UC03
+Customer -- UC04
+Customer -- UC05
+Customer -- UC06
+Customer -- UC07
+Customer -- UC08
+Customer -- UC09
+Admin -- UC03
+Admin -- UC10
+Admin -- UC11
+Admin -- UC12
+Admin -- UC13
+UC06 -- ZaloPay
+
+note bottom of UC03
+  Khách chưa đăng nhập: đăng ký, đăng nhập.
+  Người đã đăng nhập: thao tác tài khoản của mình.
+  Quyền chi tiết theo bảng FR trong SRS.
+end note
+@enduml
