@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ProductsModule } from './products/products.module.js';
 
-// Business modules are integrated by their respective Assignment 2 issues.
-@Module({})
+@Module({ imports: [ProductsModule] })
 export class AppModule {}

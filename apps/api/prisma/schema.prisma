@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Int
+  imageUrl   String
+  stock      Int
+  version    Int         @default(0)
+  orderItems OrderItem[]
+}
+
+model User {
+  id            Int     @id @default(autoincrement())
+  email         String  @unique
+  name          String? @db.VarChar(100)
+  phone         String? @db.VarChar(16)
+  sessionVersion Int    @default(0)
+  passwordHash  String
+  role          String  @default("CUSTOMER")
+  loyaltyPoints Int     @default(0)
+  orders        Order[]
+  inventoryMovements InventoryMovement[]
+  cancelledOrders Order[] @relation("OrderCancellationActor")
+  paymentNotes Payment[] @relation("PaymentNoteActor")
+}
+
+model Order {
+  id              Int               @id @default(autoincrement())
+  userId          Int
+  user            User              @relation(fields: [userId], references: [id])
+  status          String            @default("PENDING")
+  total           Int // Tổng tiền thực trả sau giảm giá (VND)
+  discount        Int               @default(0)
+  promoCode       String?
+  loyaltyAwarded  Boolean           @default(false)
+  idempotencyKey  String?
+  idempotencyHash String?
+  expiresAt       DateTime?
+  recipientName   String?
+  // Legacy order data only; no longer collected or exposed by the application.
+  recipientPhone  String? @ignore
+  createdAt       DateTime          @default(now())
+  cancellationReason String? @db.VarChar(300)
+  cancelledAt DateTime?
+  cancelledById Int?
+  cancelledBy User? @relation("OrderCancellationActor", fields: [cancelledById], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  payments        Payment[]
+  ingredientUses  OrderIngredient[]
+
+  @@unique([userId, idempotencyKey])
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  Int?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: Restrict)
+  recipeId   Int?
+  recipe     Recipe?  @relation(fields: [recipeId], references: [id])
+  recipeName String?
+  quantity   Int
+  size       String   @default("M")
+  toppings   Json
+  sugarLevel Int?
+  iceLevel   String?
+  note       String?  @db.VarChar(200)
+  unitPrice  Int
+  subtotal   Int
+}
+
+model Payment {
+  id                    Int       @id @default(autoincrement())
+  orderId               Int
+  order                 Order     @relation(fields: [orderId], references: [id])
+  userId                Int?
+  provider              String    @default("ZALOPAY")
+  transactionRef        String?   @unique
+  creationStatus        String    @default("UNKNOWN")
+  lastQueriedAt         DateTime?
+  paymentUrl            String?
+  providerTransactionId String?
+  idempotencyKey        String?
+  requestHash           String?
+  amount                Int
+  method                String    @default("ZALOPAY")
+  status                String    @default("PENDING")
+  paidAt                DateTime?
+  createdAt             DateTime  @default(now())
+  adminNote String? @db.VarChar(1000)
+  adminNoteUpdatedAt DateTime?
+  adminNoteUpdatedById Int?
+  adminNoteUpdatedBy User? @relation("PaymentNoteActor", fields: [adminNoteUpdatedById], references: [id], onDelete: Restrict)
+
+  @@unique([userId, idempotencyKey])
+}
+
+model Ingredient {
+  id        Int                @id @default(autoincrement())
+  name      String             @unique
+  unit      String
+  stock     Int                @default(0)
+  reserved  Int                @default(0)
+  minStock  Int                @default(0)
+  version   Int                @default(0)
+  recipes   RecipeIngredient[]
+  orderUses OrderIngredient[]
+  movements InventoryMovement[]
+}
+
+model InventoryMovement {
+  id Int @id @default(autoincrement())
+  ingredientId Int
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  actorId Int
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  kind String
+  delta Int
+  stockBefore Int
+  stockAfter Int
+  reason String @db.VarChar(300)
+  idempotencyKey String?
+  requestHash String
+  createdAt DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey])
+  @@index([ingredientId, createdAt])
+}
+
+enum ProductCategory {
+  COFFEE
+  TEA
+  OTHER
+}
+
+model Recipe {
+  id          Int                @id @default(autoincrement())
+  name        String             @unique
+  price       Int
+  imageUrl    String
+  isActive    Boolean            @default(true)
+  category    ProductCategory    @default(OTHER)
+  ingredients RecipeIngredient[]
+  orderItems  OrderItem[]
+}
+
+model RecipeIngredient {
+  recipeId     Int
+  ingredientId Int
+  quantity     Int
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@id([recipeId, ingredientId])
+}
+
+model OrderIngredient {
+  orderId      Int
+  ingredientId Int
+  quantity     Int
+  status       String     @default("RESERVED")
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@id([orderId, ingredientId])
+}
+
+model SeedRun {
+  id            String   @id
+  initializedAt DateTime @default(now())
+}
