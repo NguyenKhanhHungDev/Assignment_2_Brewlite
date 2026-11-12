@@ -54,3 +54,11 @@ File này chỉ ghi quy trình. Người quản trị vẫn phải bật và ki�
 - Cập nhật README, cấu hình mẫu và tài liệu bị ảnh hưởng; không đưa secret vào Git.
 - Xử lý góp ý và xung đột; chỉ merge khi các check bắt buộc đạt nếu có CI.
 - Lưu minh chứng trước khi đóng issue. Merge PR hoặc có file scaffold không tự chứng minh chức năng đã hoàn thành.
+
+## 5. Quản lý thay đổi tài liệu
+
+- Đặt Task 1–3 trong các thư mục theo [bảng chỉ dẫn](../README.md); cập nhật liên kết nếu đổi tên hoặc di chuyển file.
+- PR sửa tài liệu ghi rõ nội dung thay đổi, lý do, yêu cầu/code/test bị ảnh hưởng và kết quả kiểm tra. Không bắt buộc dùng file PR template.
+- Khi kế thừa code, kiểm tra `main` mới nhất của repo cũ, ghi repo và SHA nguồn trong PR/minh chứng; chỉ chuyển phần đúng phạm vi issue cùng dependency liên quan.
+- Đổi sơ đồ phải cập nhật cả nguồn PUML và ảnh PNG; đổi yêu cầu phải rà lại tài liệu thiết kế và ma trận truy vết liên quan.
+- Xem lịch sử bằng PR hoặc `git log --follow -- docs/duong-dan-file.md`; xem một thay đổi bằng `git show <commit> -- docs/duong-dan-file.md`. Thay đường dẫn và commit bằng giá trị thật.
