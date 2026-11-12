@@ -1,6 +1,6 @@
 # Minh chứng Task 4.1 — Nền dự án
 
-Ngày 12/11/2026. Nhánh `feat/4.1-setup-project`, [issue #7](https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite/issues/7). Kết quả local, chưa commit/push hoặc nghiệm thu issue.
+Ngày 12/11/2026. Nhánh `feat/4.1-setup-project`, [issue #7](https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite/issues/7). Thay đổi nền đã merge qua [PR #42](https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite/pull/42), merge commit `d8a55bd0ccfc0fad9aec32d4610da4205aedfdd4`. Các kết quả dưới đây là kiểm tra local, không phải CI.
 
 ## Nguồn và phạm vi
 
@@ -32,4 +32,4 @@ Node.js `v24.21.0`, npm `11.19.0`, Linux. Chạy từ gốc repo.
 
 Smoke dùng cổng trống và tự dừng tiến trình nó tạo. Lượt kiểm tra development ban đầu bị chặn bởi dev server đang có; người dùng đã chạy lại và cung cấp kết quả PASS cho cả API/Web. npm cảnh báo ESLint 9 deprecated và các install-script chưa được duyệt; chưa bật thêm install-script. Khả năng chạy Prisma/bcrypt chưa được kiểm chứng ở nền này.
 
-Chưa kiểm chứng menu, auth, orders, payment, database, component test, CI/CD hoặc AWS. Issue #7 vẫn mở để review/merge theo quy trình.
+Chưa kiểm chứng menu, auth, orders, payment, database, component test, CI/CD hoặc AWS. PR #42 đã merge; việc nghiệm thu nghiệp vụ thuộc các issue tiếp theo.

@@ -4,6 +4,8 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 
 ## Tài liệu
 
+[Bảng chỉ dẫn Task 1–3 và lịch sử tài liệu](docs/README.md).
+
 - [Bối cảnh và phạm vi](docs/requirements/context-and-scope.md)
 - [Đặc tả yêu cầu SRS](docs/requirements/srs.md)
 - [Use-case đặt và thanh toán](docs/requirements/use-case-checkout.md)
