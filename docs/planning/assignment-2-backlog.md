@@ -12,6 +12,8 @@ Tài liệu này điều chỉnh đề xuất ban đầu thành 35 issue theo SR
 
 ## Cách kế thừa code cũ
 
+**Nguồn kế thừa:** trước khi bắt đầu mỗi issue, kiểm tra `main` mới nhất của BrewLite-SE và ghi commit SHA vào PR/minh chứng. Lấy đúng code hiện hành của phần việc đó, kèm dependency, cấu hình, schema/migration và test liên quan. Không quay về commit khởi tạo hoặc bản cũ chỉ để đơn giản hóa. Cố định SHA trong lúc thực hiện issue để tái lập kết quả; nếu nguồn thay đổi, review chênh lệch trước khi cập nhật. Chỉ viết mới phần còn thiếu theo Assignment 2.
+
 Đã đối chiếu tĩnh BrewLite-SE tại commit `e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe`; nội dung cây Git giống commit `d15283a9d8b307c0af42642279ae6158c92e2864` đang được tài liệu dẫn chiếu. Đây không phải kết quả chạy build/test.
 
 Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hướng **chuyển code và dependency cần thiết → điều chỉnh theo SRS → kiểm thử trên repo mới**. Chỉ viết mới phần còn thiếu hoặc chưa đáp ứng tiêu chí; không mặc định viết lại Auth, Orders, Inventory, Payment hoặc Loyalty. Xem [đối chiếu repo cũ](../requirements/legacy-repo-review.md).
