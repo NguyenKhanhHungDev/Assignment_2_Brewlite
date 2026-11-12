@@ -17,7 +17,7 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Ma trận truy vết](docs/traceability-matrix.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
 
-Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện hiện vẫn là trang chào; các module nghiệp vụ khác, CI/CD và deploy sẽ được bổ sung theo từng issue.
+Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện menu gọi API, có tìm kiếm/lọc và trạng thái tải/trống/lỗi. Các module nghiệp vụ khác, CI/CD và deploy sẽ được bổ sung theo từng issue.
 
 ## Cài đặt và chuẩn bị database local
 
@@ -70,14 +70,17 @@ npm --prefix apps/api run start:dev
 npm --prefix apps/web run dev
 ```
 
-- Web: http://localhost:3000 — trang chào BrewLite.
+- Web: http://localhost:3000 — menu BrewLite.
 - API: http://localhost:3001 — `GET /` trả HTTP 404 vì không đăng ký route gốc; dùng `/products` để xem menu.
 - API đọc `apps/api/.env`; root `.env.example` là mẫu để sao chép, không được ứng dụng tự đọc. Không ghi đè `.env` đã có.
 - Đổi cổng API bằng `PORT` trong `apps/api/.env`; đổi cổng Web bằng `PORT=3002 npm --prefix apps/web run dev`.
 - Menu công khai: `GET http://localhost:3001/products`; chi tiết: `GET http://localhost:3001/products/1` (dùng ID thật từ danh sách).
 - Response gồm `id`, `name`, `price` (size M, VND), `imageUrl`, `category`, `stock`, `stockBySize`. Chỉ trả công thức đang bán; số lượng khả dụng tính từ tồn trừ lượng đã giữ.
 - ID sai định dạng/không thuộc 1–2147483647 trả 400; món không tồn tại hoặc ngừng bán trả 404. Danh sách rỗng trả `[]`.
-- Ảnh được tham chiếu qua `imageUrl`; file ảnh và giao diện menu được chuyển ở issue #18. Chưa có health endpoint.
+- Ảnh món kế thừa nằm trong `apps/web/public/images/products/`. Khi thay ảnh, giữ tên file khớp `imageUrl` trong API (ví dụ `ca-phe-sua.jpg`); thiếu ảnh hoặc ảnh lỗi sẽ hiển thị “Ảnh đang cập nhật”.
+- Web gọi `/products` cùng origin, Next.js proxy tới API; không cần mở CORS cho luồng menu. Nếu đổi cổng API, sao chép `apps/web/.env.example` thành `apps/web/.env.local` (không ghi đè file đã có), chỉnh `API_INTERNAL_URL` rồi restart Web. Production cần build lại với đúng URL API.
+- Menu giữ thiết kế từ repo cũ, lọc theo danh mục API và tìm không phân biệt dấu/hoa thường/đ với d. Chưa có trang tùy chọn, giỏ hàng hoặc health endpoint trong phần này.
+- Xem [nguồn và kiểm tra giao diện menu](docs/evidence/task-4.3.2-menu.md).
 
 ## Kiểm tra và build
 

@@ -101,8 +101,10 @@ try {
   const webResponse = await ready(web, `http://127.0.0.1:${webPort}/`);
   const html = await webResponse.text();
   assert.match(html, /<html[^>]*lang="vi"/);
-  assert.match(html, /<h1[^>]*>BrewLite<\/h1>/);
-  console.log('PASS Web: HTTP 200, lang=vi, BrewLite');
+  assert.match(html, /id="hero-heading"/);
+  assert.match(html, /id="menu-heading"/);
+  assert.match(html, /Thực đơn BrewLite/);
+  console.log('PASS Web: HTTP 200, lang=vi, BrewLite menu headings');
 } finally {
   await Promise.all(children.map(stop));
 }
