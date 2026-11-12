@@ -7,3 +7,8 @@ coverage/
 !.env.example
 *.log
 .DS_Store
+
+# Generated TypeScript and local tool output
+*.tsbuildinfo
+out/
+build/

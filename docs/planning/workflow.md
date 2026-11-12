@@ -25,12 +25,12 @@
 
 | Công việc | Ví dụ tên nhánh |
 | --- | --- |
-| Viết tài liệu | `docs/requirements` |
-| Thêm chức năng | `feat/product-list` |
-| Sửa lỗi | `fix/cart` |
-| Làm kiểm tra tự động | `ci/checks` |
+| Viết tài liệu | `docs/4.2-project-docs` |
+| Thêm chức năng | `feat/4.3.1-products-api` |
+| Sửa lỗi | `fix/5.1.2-cart-total` |
+| Làm kiểm tra tự động | `ci/4.4-pr-checks` |
 
-Tên nhánh và tên file dùng tiếng Anh ngắn gọn, dễ hiểu. Ví dụ tên file: `workflow.md`, `architecture.md`, `products.service.ts`.
+Tên nhánh theo mẫu `loại/mã-task-nội-dung`, ví dụ `feat/4.1-setup-project`. Mã task là mã trong backlog, không phải số issue GitHub. Tên nhánh và tên file dùng tiếng Anh ngắn gọn, dễ hiểu. Ví dụ tên file: `workflow.md`, `architecture.md`, `products.service.ts`.
 
 Ví dụ commit: `docs: add requirements`.
 
@@ -46,3 +46,11 @@ Người quản trị repo bật bảo vệ cho nhánh `main` trong Settings:
 **Repo mới đang trống:** người được nhóm cho phép tạo commit khởi tạo và push để có `main` trước. Sau đó bật bảo vệ; mọi thay đổi tiếp theo đi qua PR.
 
 File này chỉ ghi quy trình. Người quản trị vẫn phải bật và kiểm tra các cài đặt trên GitHub.
+
+## 4. Điều kiện hoàn thành một đầu việc (Definition of Done)
+
+- Đáp ứng các tiêu chí chấp nhận của issue; có PR liên kết issue.
+- Chạy kiểm tra phù hợp và ghi lệnh, kết quả, phần chưa kiểm chứng. Không tính test bị skip là đạt.
+- Cập nhật README, cấu hình mẫu và tài liệu bị ảnh hưởng; không đưa secret vào Git.
+- Xử lý góp ý và xung đột; chỉ merge khi các check bắt buộc đạt nếu có CI.
+- Lưu minh chứng trước khi đóng issue. Merge PR hoặc có file scaffold không tự chứng minh chức năng đã hoàn thành.

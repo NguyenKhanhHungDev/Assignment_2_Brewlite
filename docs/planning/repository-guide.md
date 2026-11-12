@@ -63,6 +63,8 @@ Cây trên là **mục tiêu**; một số file chưa có và sẽ được tạ
 
 ### 3.3. Kế thừa repo cũ có kiểm soát
 
+**Nguồn kế thừa:** trước khi bắt đầu mỗi issue, kiểm tra `main` mới nhất của BrewLite-SE và ghi commit SHA vào PR/minh chứng. Lấy đúng code hiện hành của phần việc đó, kèm dependency, cấu hình, schema/migration và test liên quan. Không quay về commit khởi tạo hoặc bản cũ chỉ để đơn giản hóa. Cố định SHA trong lúc thực hiện issue để tái lập kết quả; nếu nguồn thay đổi, review chênh lệch trước khi cập nhật. Chỉ viết mới phần còn thiếu theo Assignment 2.
+
 - [ ] Đối chiếu `apps/web`, `apps/api`, schema/migration, Dockerfile và `compose.yaml` của BrewLite-SE với SRS mới.
 - [ ] Chuyển từng phần cùng dependency, lockfile, cấu hình và test cần thiết; không chuyển `.env` thật, credential hoặc dữ liệu cá nhân.
 - [ ] Repo cũ dùng lockfile npm riêng cho Web và API; khi tích hợp, kiểm tra scripts và phiên bản thực tế của từng app trước khi chọn lệnh chạy.
