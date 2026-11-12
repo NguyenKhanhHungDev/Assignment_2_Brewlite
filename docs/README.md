@@ -17,6 +17,7 @@ PR ghi lịch sử thay đổi, không thay thế bằng chứng nghiệm thu. T
 - [Backlog hai Sprint](planning/assignment-2-backlog.md), [hướng dẫn hoàn thành repo](planning/repository-guide.md), [quy trình làm việc](planning/workflow.md).
 - [Ma trận truy vết](traceability-matrix.md): cập nhật code/test và kết quả thật theo tiến độ; chưa điền đủ không được coi là hoàn tất truy vết.
 - [Cài đặt, chạy và kiểm tra local](../README.md), [minh chứng nền Task 4.1](evidence/task-4.1-setup.md).
+- [Minh chứng kiểm thử menu Task 4.3.3](evidence/task-4.3.3-tests.md).
 - [Minh chứng giao diện menu Task 4.3.2](evidence/task-4.3.2-menu.md).
 - [Minh chứng Products API Task 4.3.1](evidence/task-4.3.1-products.md).
 - [Minh chứng quản lý tài liệu Task 4.2](evidence/task-4.2-docs.md).

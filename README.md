@@ -90,10 +90,11 @@ npm --prefix apps/api test
 npm --prefix apps/api run test:e2e
 npm --prefix apps/api run build
 npm --prefix apps/web run lint
+npm --prefix apps/web test
 npm --prefix apps/web run build
 ```
 
-`npm test` chạy unit test Products/RecipeMenu và seed kế thừa. `test:e2e` kiểm tra HTTP Products với repository giả, không cần DB và không phải E2E đặt/thanh toán. Test component Web ở #19; CI ở #20.
+`npm test` chạy unit test Products/RecipeMenu và seed kế thừa. `test:e2e` kiểm tra HTTP Products với repository giả, không cần DB và không phải E2E đặt/thanh toán. Web có 24 test unit/component chạy bằng `npm --prefix apps/web test`; dùng `npm --prefix apps/web run test:watch` khi phát triển. Test Web dùng jsdom và mock fetch/Image, không cần DB; không thay thế kiểm tra CSS/mobile hoặc E2E trình duyệt. CI ở #20. Xem [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
 
 Kiểm thử với PostgreSQL thật cần DB **local riêng có tên kết thúc `_test`** và đã migrate/seed. Không dùng DB làm việc đang có dữ liệu. Ví dụ tạo DB test trong container trên một lần:
 
