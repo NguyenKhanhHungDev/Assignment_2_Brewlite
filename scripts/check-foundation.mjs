@@ -85,6 +85,16 @@ try {
   const apiResponse = await ready(api, `http://127.0.0.1:${apiPort}/`, 404);
   assert.equal((await apiResponse.json()).statusCode, 404);
   console.log('PASS API: bootstrap OK, unregistered route returns HTTP 404');
+  const productsResponse = await ready(api, `http://127.0.0.1:${apiPort}/products`);
+  const products = await productsResponse.json();
+  assert.ok(Array.isArray(products), 'Products response must be an array');
+  if (products.length) {
+    const product = products[0];
+    assert.ok(Number.isInteger(product.id) && product.id > 0);
+    const detailResponse = await ready(api, `http://127.0.0.1:${apiPort}/products/${product.id}`);
+    assert.deepEqual(await detailResponse.json(), product);
+  }
+  console.log(`PASS Products: HTTP 200, ${products.length} menu items, matching details when non-empty`);
 
   const webPort = await availablePort();
   const web = start('web', development ? 'dev' : 'start', webPort);
