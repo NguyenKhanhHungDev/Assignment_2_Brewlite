@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import BrewLiteMark from "./BrewLiteMark";
+import HeaderActions from "./HeaderActions";
 
 export default function BrewLiteHeader() {
   return (
@@ -17,6 +18,7 @@ export default function BrewLiteHeader() {
           <Link className="bl-menu-link bl-nav-explore" href="/#menu">
             <span>Thực đơn</span>
           </Link>
+          <HeaderActions />
         </nav>
       </div>
     </header>
