@@ -2,6 +2,9 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
+
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-vitest-e2e';
+
 import { AppModule } from '../src/app.module.js';
 import { RecipesPrismaAdapter } from '../src/recipes/recipes.prisma-adapter.js';
 
