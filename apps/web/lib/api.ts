@@ -1,3 +1,5 @@
+import { assertConnected } from './connection';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -12,6 +14,7 @@ export async function requestJson(
   path: string,
   init: RequestInit = {},
 ): Promise<unknown> {
+  if (!['GET', 'HEAD'].includes((init.method ?? 'GET').toUpperCase())) assertConnected();
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15_000);
   try {
