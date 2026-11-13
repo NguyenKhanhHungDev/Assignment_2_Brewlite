@@ -17,7 +17,7 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Ma trận truy vết](docs/traceability-matrix.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
 
-Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện menu gọi API, có tìm kiếm/lọc và trạng thái tải/trống/lỗi. Các module nghiệp vụ khác, CI/CD và deploy sẽ được bổ sung theo từng issue.
+Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện menu gọi API, có tìm kiếm/lọc và trạng thái tải/trống/lỗi. CI kiểm tra pull request; các module nghiệp vụ khác, CD và deploy sẽ được bổ sung theo từng issue.
 
 ## Cài đặt và chuẩn bị database local
 
@@ -125,3 +125,13 @@ npm --prefix apps/web start
 ```
 
 Dùng Ctrl+C để dừng. Bản production local không phải triển khai AWS. Xem [nguồn kế thừa và minh chứng Task 4.1](docs/evidence/task-4.1-setup.md).
+
+## CI cho pull request
+
+GitHub Actions chạy API/Web khi mở hoặc cập nhật PR vào `main`, push `main`; có thể chạy thủ công sau khi workflow có trên nhánh mặc định. Mỗi app chạy `npm ci` → lint → test → build; API sinh Prisma Client và chạy thêm HTTP test với mock, không cần DB thật.
+
+`PR quality gate` chỉ đạt khi cả `API checks` và `Web checks` đều đạt. Không bỏ qua lỗi hoặc job bị skip. Ruleset `require-ci` yêu cầu đúng check này từ GitHub Actions, không có bypass; giữ riêng ruleset quyền merge hiện có.
+
+Với ba nhánh đang phụ thuộc nhau, merge theo thứ tự menu #18 → kiểm thử #19 → CI #20 bằng **Merge pull request**. Ruleset CI được chuẩn bị và kiểm chứng nhưng để Disabled đến khi hai PR tiền đề đã merge, tránh chặn các nhánh chưa có workflow. Sau khi merge menu và kiểm thử, vào Settings → Rules → Rulesets → `require-ci`, chuyển **Active**, lưu; xác nhận PR CI có check xanh rồi mới merge. Chỉ nghiệm thu #20 khi CI đã merge và rule đang Active.
+
+Xem [minh chứng CI và lượt pass/fail](docs/evidence/task-4.4-ci.md). CI không triển khai EC2; CD sẽ được bổ sung riêng.
