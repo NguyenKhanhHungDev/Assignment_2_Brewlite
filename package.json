@@ -1,0 +1,8 @@
+{
+  "name": "assignment-2-brewlite",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ]
+}
