@@ -15,3 +15,7 @@ build/
 
 # Prisma client is regenerated from the versioned schema
 apps/api/src/generated/
+
+# Local browser verification artifacts
+.playwright-cli/
+output/playwright/
