@@ -26,6 +26,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/brewlite_test
+      JWT_SECRET: ci-test-jwt-secret-only
 
     steps:
       - name: Checkout code
