@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CartProvider from "@/components/CartProvider";
+import { ToastProvider } from "@/components/Toast";
 import BrewLiteHeader from "@/components/BrewLiteHeader";
 import BrewLiteFooter from "@/components/BrewLiteFooter";
 
@@ -26,11 +28,15 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <div className="brewlite-app" id="top">
-          <BrewLiteHeader />
-          {children}
-          <BrewLiteFooter />
-        </div>
+        <ToastProvider>
+          <CartProvider>
+            <div className="brewlite-app" id="top">
+              <BrewLiteHeader />
+              {children}
+              <BrewLiteFooter />
+            </div>
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );
