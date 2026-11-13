@@ -94,7 +94,7 @@ npm --prefix apps/web test
 npm --prefix apps/web run build
 ```
 
-`npm test` chạy unit test Products/RecipeMenu và seed kế thừa. `test:e2e` kiểm tra HTTP Products với repository giả, không cần DB và không phải E2E đặt/thanh toán. Web có 24 test unit/component chạy bằng `npm --prefix apps/web test`; dùng `npm --prefix apps/web run test:watch` khi phát triển. Test Web dùng jsdom và mock fetch/Image, không cần DB; không thay thế kiểm tra CSS/mobile hoặc E2E trình duyệt. CI ở #20. Xem [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
+`npm test` chạy unit test Products/RecipeMenu, seed và nghiệp vụ giá/lựa chọn Orders. `test:e2e` kiểm tra HTTP Products với repository giả, không cần DB và không phải E2E đặt/thanh toán. Web có test unit/component cho menu, giá và khẩu vị chạy bằng `npm --prefix apps/web test`; dùng `npm --prefix apps/web run test:watch` khi phát triển. Test Web dùng jsdom và mock fetch/Image cho menu, không cần DB; không thay thế kiểm tra CSS/mobile hoặc E2E trình duyệt. CI ở #20. Xem [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
 
 Kiểm thử với PostgreSQL thật cần DB **local riêng có tên kết thúc `_test`** và đã migrate/seed. Không dùng DB làm việc đang có dữ liệu. Ví dụ tạo DB test trong container trên một lần:
 
@@ -125,6 +125,16 @@ npm --prefix apps/web start
 ```
 
 Dùng Ctrl+C để dừng. Bản production local không phải triển khai AWS. Xem [nguồn kế thừa và minh chứng Task 4.1](docs/evidence/task-4.1-setup.md).
+
+## Giá và lựa chọn món — Task 5.1.1a (#21)
+
+Kế thừa nguyên bản từ [BrewLite-SE tại `e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe`](https://github.com/NguyenKhanhHungDev/BrewLite-SE/tree/e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe): `apps/api/src/orders/orders.pricing.ts`, `order-preferences.ts`, `orders.contract.ts`, `dto/create-order.dto.ts` và `apps/web/lib/pricing.ts`, `preferences.ts`. Backend tính giá size S/M/L, topping, số ly từ giá công thức chính thức; kiểm tra đường/đá, ghi chú, tồn khả dụng và giới hạn số tiền. Web helper chỉ tính giá hiển thị theo cùng công thức SRS mục 7.
+
+Dependency đi kèm từ cùng SHA: `apps/api/src/orders/orders.service.ts`, `orders.ingredients.ts`, `order-state.ts`, `apps/api/src/promotions/promotions.service.ts` và test nguồn `orders.service.spec.ts`, `orders.ingredients.spec.ts`, `promotions.service.spec.ts`. Validation đầy đủ và tính thành tiền dòng/tổng đơn nằm trong `OrdersService.create`; không tách công thức hay thêm endpoint báo giá. Phát dùng service này khi tích hợp Orders; Huy dùng chung helper giá/khẩu vị và hàm `applyPromotion` khi tích hợp Promotions/Web. Việc chuyển dependency không đồng nghĩa nghiệm thu các issue của Orders/Promotions.
+
+Test bổ sung: `apps/api/src/orders/orders.pricing.spec.ts` và `apps/web/test/pricing-preferences.test.ts`, kiểm tra bảng giá, lựa chọn sai/trùng, số lượng, ghi chú 200/201 ký tự, khẩu vị legacy, giá âm/tràn số và làm tròn BREW10. Chạy riêng bằng `npm --prefix apps/api test -- src/orders src/promotions` và `npm --prefix apps/web test -- test/pricing-preferences.test.ts`.
+
+**Chưa nghiệm thu đầy đủ #21:** `AppModule` hiện chỉ đăng ký Products. Orders controller, provider `ORDERS_STORE`/Prisma adapter và Auth chưa được tích hợp; test service dùng store giả, chưa chứng minh `POST /orders` chạy với JWT/database thật hoặc giữ kho trong transaction. DTO/source không đặt trần 99 ly ở backend; trần 1–99 là yêu cầu giao diện FR-03 và cần kiểm chứng khi chuyển trang chi tiết món ở 5.1.1b. Giữ nguyên hành vi nguồn, chưa triển khai trang tùy chọn/giỏ hoặc kiểm thử toàn luồng đặt đơn.
 
 ## CI cho pull request
 
