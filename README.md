@@ -91,14 +91,25 @@ Chuẩn bị PostgreSQL local, cài dependency và migrate/seed theo phần trê
 
 1. Mở [trang đăng nhập](http://localhost:3000/login). Nếu chưa có tài khoản local, chọn **Đăng ký mới** để tạo tài khoản.
 2. Tài khoản đăng ký mới mặc định có role `CUSTOMER`; seed hiện không tạo tài khoản Admin. Nếu đã có tài khoản `ADMIN`, dùng tài khoản đó và chuyển tới bước 4.
-3. Để cấp quyền cho tài khoản demo trên **database local**, mở terminal thứ ba từ gốc repo:
+3. Để cấp quyền cho tài khoản demo trên **database local**, mở terminal thứ ba. Nếu dùng container `brewlite-menu-db` theo phần cài đặt phía trên, chạy:
 
    ```bash
-   cd apps/api
-   ./node_modules/.bin/prisma studio --config prisma7.config.ts --port 5555
+   docker exec -it brewlite-menu-db psql -U brewlite -d brewlite_local
    ```
 
-   Mở [Prisma Studio](http://localhost:5555), vào bảng `User`, tìm đúng email tài khoản demo, đổi trường `role` thành `ADMIN` rồi lưu.
+   Nếu đang chạy toàn bộ ứng dụng bằng Docker Compose, chạy lệnh sau tại gốc repo để mở đúng database của stack đó:
+
+   ```bash
+   docker compose exec db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+   ```
+
+   Trong `psql`, thay email dưới đây bằng email vừa đăng ký rồi chạy:
+
+   ```sql
+   UPDATE "User" SET "role" = 'ADMIN' WHERE "email" = 'admin.demo@example.com';
+   ```
+
+   Kết quả phải là `UPDATE 1`. Nếu là `UPDATE 0`, kiểm tra lại email và database đang kết nối. Nhập `\q` để thoát. Cách cấp quyền trực tiếp này dùng cho tài khoản demo local, giống repo nguồn.
 4. Đăng nhập lại bằng tài khoản đó, mở [trang tổng quan Admin](http://localhost:3000/admin). Trang hiển thị số nguyên liệu, công thức, tổng đơn và nguyên liệu có lượng khả dụng dưới hoặc bằng ngưỡng tồn. Khi tải lỗi, bấm **Thử lại**; nếu chưa có đơn, tổng đơn hiển thị 0.
 
 Từ thanh điều hướng Admin có thể mở **Nguyên liệu**, **Công thức & món**, **Đơn hàng** và **Đối soát**. Tài khoản `CUSTOMER` truy cập trang quản trị sẽ thấy **403 — Không có quyền truy cập**.
