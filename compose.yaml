@@ -1,0 +1,105 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-brewlite}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-brewlite_local}
+      POSTGRES_DB: ${DB_NAME:-brewlite_local}
+    volumes:
+      - brewlite_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Khong publish cong DB ra host de tranh dung PostgreSQL 5432/5433 va dam bao DB chi noi bo.
+
+  migrate:
+    build:
+      context: ./apps/api
+      target: migration
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-brewlite}:${DB_PASSWORD:-brewlite_local}@db:5432/${DB_NAME:-brewlite_local}?schema=public
+      RUN_SEED: ${RUN_SEED:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ./apps/api
+      target: runtime
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-brewlite}:${DB_PASSWORD:-brewlite_local}@db:5432/${DB_NAME:-brewlite_local}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-replace-with-strong-local-jwt-secret}
+      # Shared only between servers; fallback values are for local Compose demo only.
+      BFF_PROXY_SECRET: ${BFF_PROXY_SECRET:-replace-with-strong-local-bff-proxy-secret}
+      PORT: 3001
+      ZALOPAY_APP_ID: ${ZALOPAY_APP_ID:-554}
+      ZALOPAY_KEY1: ${ZALOPAY_KEY1:-8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn}
+      ZALOPAY_KEY2: ${ZALOPAY_KEY2:-uUfsWgfLkRLzq6W2uNXTCxrfxs51auny}
+      ZALOPAY_API_BASE_URL: ${ZALOPAY_API_BASE_URL:-https://sb-openapi.zalopay.vn}
+      ZALOPAY_CALLBACK_URL: ${ZALOPAY_CALLBACK_URL:-}
+      ZALOPAY_RETURN_URL: ${ZALOPAY_RETURN_URL:-http://localhost:3000/payment/result}
+    ports:
+      - "127.0.0.1:${API_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    build:
+      context: ./apps/web
+      target: runtime
+      args:
+        API_INTERNAL_URL: http://api:3001
+    environment:
+      API_INTERNAL_URL: http://api:3001
+      BFF_PROXY_SECRET: ${BFF_PROXY_SECRET:-replace-with-strong-local-bff-proxy-secret}
+      APP_ORIGIN: ${APP_ORIGIN:-}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  brewlite_pg_data:

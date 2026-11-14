@@ -17,6 +17,7 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Ma trận truy vết](docs/traceability-matrix.md)
 - [PWA: chạy local, kiểm tra offline và hướng dẫn HTTPS](docs/evidence/task-5.1.2-pwa.md)
 - [E2E trình duyệt: từ menu đến xác nhận đơn](docs/evidence/task-5.2.2-browser-e2e.md)
+- [Docker Compose và kiểm tra sức khỏe (Task 5.2.4)](docs/evidence/task-5.2.4-docker-compose.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
 
 Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện menu gọi API, có tìm kiếm/lọc và trạng thái tải/trống/lỗi. CI kiểm tra pull request; các module nghiệp vụ khác, CD và deploy sẽ được bổ sung theo từng issue.
@@ -152,3 +153,18 @@ GitHub Actions chạy API/Web khi mở hoặc cập nhật PR vào `main`, push 
 Với ba nhánh đang phụ thuộc nhau, merge theo thứ tự menu #18 → kiểm thử #19 → CI #20 bằng **Merge pull request**. Ruleset CI được chuẩn bị và kiểm chứng nhưng để Disabled đến khi hai PR tiền đề đã merge, tránh chặn các nhánh chưa có workflow. Sau khi merge menu và kiểm thử, vào Settings → Rules → Rulesets → `require-ci`, chuyển **Active**, lưu; xác nhận PR CI có check xanh rồi mới merge. Chỉ nghiệm thu #20 khi CI đã merge và rule đang Active.
 
 Xem [minh chứng CI và lượt pass/fail](docs/evidence/task-4.4-ci.md). CI không triển khai EC2; CD sẽ được bổ sung riêng.
+
+## Chạy bằng Docker Compose và kiểm tra sức khỏe (Task 5.2.4)
+
+`compose.yaml` chạy đầy đủ 4 service: `db` (PostgreSQL 17, không publish cổng ra host), `migrate` (one-shot `prisma migrate deploy` + `prisma db seed` khi `RUN_SEED=true`), `api` (`127.0.0.1:3001`) và `web` (`127.0.0.1:3000`).
+
+```bash
+cp -n .env.example .env
+docker compose up -d --build --wait
+node scripts/check-compose.mjs
+```
+
+- Health API: `GET http://127.0.0.1:3001/health` (kiểm tra kết nối PostgreSQL qua `SELECT 1`; trả `200` `{ status: "ok", service: "api", database: "up" }` khi sẵn sàng hoặc `503` `{ status: "error", service: "api", database: "down" }` khi DB mất kết nối).
+- Health Web: `GET http://127.0.0.1:3000/api/health` (trả `200` `{ status: "ok", service: "web" }`; hỗ trợ `?deep=1` kiểm tra thêm API upstream).
+- Nếu cổng 3000/3001 đang bận trên máy local, chỉnh `WEB_PORT` và `API_PORT` trong `.env` (hoặc truyền biến môi trường) và truyền `--api-url` / `--web-url` cho `scripts/check-compose.mjs`.
+- Trong môi trường không muốn tự chạy seed demo, đặt `RUN_SEED=false`. Dừng container bằng `docker compose down` (giữ nguyên volume dữ liệu `brewlite_pg_data`). Xem [minh chứng Docker Compose và health check](docs/evidence/task-5.2.4-docker-compose.md).
