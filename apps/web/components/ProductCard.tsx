@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import type { Product } from "@/lib/products";
 import ProductImage from "./ProductImage";
 import { ExclamationIcon } from "./Icons";
@@ -31,7 +32,12 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="bl-product-info">
         <div className="bl-product-title-row">
           <h3 className="bl-product-title">
-            {product.name}
+            <Link
+              href={`/products/${product.id}`}
+              className="bl-product-title-link"
+            >
+              {product.name}
+            </Link>
           </h3>
         </div>
 

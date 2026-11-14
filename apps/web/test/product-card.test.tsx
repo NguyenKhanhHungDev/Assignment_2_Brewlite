@@ -4,6 +4,13 @@ import ProductCard from "@/components/ProductCard";
 import { products } from "./fixtures";
 
 describe("ProductCard stock and image states", () => {
+  it("links an available menu item to its customization page", () => {
+    render(<ProductCard product={products[0]} />);
+    expect(screen.getByRole("link", { name: products[0].name })).toHaveAttribute(
+      "href",
+      `/products/${products[0].id}`,
+    );
+  });
   it("shows sold out only when every size is unavailable", () => {
     render(<ProductCard product={{ ...products[0], stock: 0, stockBySize: { S: 0, M: 0, L: 0 } }} />);
     expect(screen.getByRole("article")).toHaveAccessibleName(/hiện đã hết hàng/);
