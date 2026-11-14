@@ -108,3 +108,15 @@ npm --prefix apps/web run test:e2e:headed
 ```
 
 Kết quả đạt khi Playwright báo `1 passed`, trang cuối hiển thị mã đơn, `Chờ thanh toán`, `ZaloPay Sandbox`, và không có file ngoài dự kiến trong `git status`.
+
+## Minh chứng thao tác thật trên trình duyệt (bổ sung sau)
+
+Thực hiện trên stack thật local (PostgreSQL 17.7 · API NestJS · Web Next.js):
+
+1. Xem menu → chọn món → chọn size → thêm vào giỏ.
+2. Checkout → đăng ký/đăng nhập → nhập tên người nhận → xác nhận đơn (Chờ thanh toán).
+3. Thanh toán ZaloPay Sandbox → duyệt giao dịch trên cổng sandbox.
+4. Đơn chuyển Đã thanh toán → admin nhận đơn (Bắt đầu pha) → Đang pha chế.
+
+Kết quả: giao dịch Sandbox thành công, đơn và thanh toán được đồng bộ đúng trạng thái.
+Video ghi hình thao tác thật được lưu ngoài repository (dung lượng lớn) và trình chiếu trực tiếp khi nghiệm thu.
