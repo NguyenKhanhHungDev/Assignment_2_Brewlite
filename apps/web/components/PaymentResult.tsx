@@ -6,6 +6,7 @@ import PaymentDetails from "./PaymentDetails";
 import { useAuth } from "./AuthProvider";
 import { useCheckout } from "./CheckoutProvider";
 import { ApiError } from "@/lib/api";
+import useConnection from './useConnection';
 import { money, optionText, type Size, type Topping } from "@/lib/pricing";
 import {
   parsePaymentOrder,
@@ -61,6 +62,12 @@ type State = {
 };
 
 export default function PaymentResult({ orderId }: { orderId: number }) {
+  const connection = useConnection();
+  if (connection !== 'online') return <p role="status">Chưa thể xác minh kết quả thanh toán. Vui lòng kết nối lại để lấy trạng thái từ máy chủ.</p>;
+  return <PaymentResultData orderId={orderId} />;
+}
+
+function PaymentResultData({ orderId }: { orderId: number }) {
   const { request } = useAuth();
   const { syncPayment, storageNotice } = useCheckout();
   const [revision, setRevision] = useState(0);

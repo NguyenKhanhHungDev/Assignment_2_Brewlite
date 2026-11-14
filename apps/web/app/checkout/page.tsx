@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { useCheckout } from "@/components/CheckoutProvider";
+import useConnection from '@/components/useConnection';
+import { assertConnected } from '@/lib/connection';
 import PaymentDetails from "@/components/PaymentDetails";
 import CheckoutPaymentWatcher from "@/components/CheckoutPaymentWatcher";
 import CartSummary from "@/components/CartSummary";
@@ -23,6 +25,7 @@ import {
 } from "@/components/Icons";
 
 export default function CheckoutPage() {
+  const connection = useConnection();
   const cart = useCart();
   const auth = useAuth();
   const checkout = useCheckout();
@@ -116,10 +119,13 @@ export default function CheckoutPage() {
   }
 
   function handleOpenApp() {
+    try { assertConnected(); } catch (cause) { setError((cause as Error).message); return; }
     if (!zalopayUrl) return;
     setRedirecting(true);
     window.location.assign(zalopayUrl);
   }
+
+  if (connection !== 'online') return <main className="bl-flow-wrap"><h1>Xác nhận đơn &amp; Thanh toán</h1><p role="status">Cần kết nối máy chủ và tải dữ liệu mới trước khi tiếp tục. Giỏ hàng của bạn được giữ nguyên.</p><Link href="/cart">Về giỏ hàng</Link></main>;
 
   return (
     <main className="bl-flow-wrap">
