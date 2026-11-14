@@ -84,7 +84,14 @@ try {
   const api = start('api', development ? 'start:dev' : 'start:prod', apiPort);
   const apiResponse = await ready(api, `http://127.0.0.1:${apiPort}/`, 404);
   assert.equal((await apiResponse.json()).statusCode, 404);
-  console.log('PASS API: bootstrap OK, unregistered route returns HTTP 404');
+  const apiHealth = await ready(api, `http://127.0.0.1:${apiPort}/health`);
+  assert.deepEqual(
+    {
+      status: (await apiHealth.json()).status,
+    },
+    { status: 'ok' },
+  );
+  console.log('PASS API: bootstrap OK, GET /health returns 200 ok, unregistered route returns HTTP 404');
   const productsResponse = await ready(api, `http://127.0.0.1:${apiPort}/products`);
   const products = await productsResponse.json();
   assert.ok(Array.isArray(products), 'Products response must be an array');
@@ -98,13 +105,15 @@ try {
 
   const webPort = await availablePort();
   const web = start('web', development ? 'dev' : 'start', webPort);
+  const webHealth = await ready(web, `http://127.0.0.1:${webPort}/api/health`);
+  assert.equal((await webHealth.json()).status, 'ok');
   const webResponse = await ready(web, `http://127.0.0.1:${webPort}/`);
   const html = await webResponse.text();
   assert.match(html, /<html[^>]*lang="vi"/);
   assert.match(html, /id="hero-heading"/);
   assert.match(html, /id="menu-heading"/);
   assert.match(html, /Thực đơn BrewLite/);
-  console.log('PASS Web: HTTP 200, lang=vi, BrewLite menu headings');
+  console.log('PASS Web: GET /api/health returns 200 ok, HTTP 200, lang=vi, BrewLite menu headings');
 } finally {
   await Promise.all(children.map(stop));
 }

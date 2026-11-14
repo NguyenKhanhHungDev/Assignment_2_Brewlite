@@ -6,6 +6,7 @@ import request from 'supertest';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-vitest-e2e';
 
 import { AppModule } from '../src/app.module.js';
+import { HealthDatabase } from '../src/health/health.database.js';
 import { RecipesPrismaAdapter } from '../src/recipes/recipes.prisma-adapter.js';
 
 const recipe = {
@@ -15,19 +16,38 @@ const recipe = {
     ingredient: { name: 'Cà phê', unit: 'g', stock: 200, reserved: 40 } }],
 };
 
-describe('Products HTTP (mock repository, no database)', () => {
+describe('Products & Health HTTP (mock repository, no database)', () => {
   let app: INestApplication;
+  let dbHealthy = true;
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(RecipesPrismaAdapter)
       .useValue({
         findAll: async () => [recipe, { ...recipe, id: 2, isActive: false }],
         findById: async (id: number) => id === 1 ? recipe : null,
-      }).compile();
+      })
+      .overrideProvider(HealthDatabase)
+      .useValue({
+        ping: async () => {
+          if (!dbHealthy) throw new Error('Database unavailable');
+        },
+      })
+      .compile();
     app = module.createNestApplication();
     await app.init();
   });
   afterAll(async () => { await app?.close(); });
+
+  it('serves GET /health as 200 when database is reachable and 503 when down', async () => {
+    dbHealthy = true;
+    const okRes = await request(app.getHttpServer()).get('/health').expect(200);
+    expect(okRes.body).toMatchObject({ status: 'ok', service: 'api', database: 'up' });
+
+    dbHealthy = false;
+    const downRes = await request(app.getHttpServer()).get('/health').expect(503);
+    expect(downRes.body).toMatchObject({ status: 'error', service: 'api', database: 'down' });
+    dbHealthy = true;
+  });
 
   it('serves the public menu without inactive recipes', async () => {
     const response = await request(app.getHttpServer()).get('/products').expect(200);
