@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
+import { assertLocalTestDatabase } from '../../test/test-database.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import {
   consumeReservation,
@@ -41,6 +42,7 @@ describe.skipIf(!integrationEnabled)(
     const toppingBackup: Array<{ id: number; stock: number; reserved: number }> = [];
 
     beforeAll(async () => {
+      assertLocalTestDatabase(process.env.DATABASE_URL);
       if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
         throw new Error('Set DATABASE_URL and JWT_SECRET in apps/api/.env before integration testing');
       }

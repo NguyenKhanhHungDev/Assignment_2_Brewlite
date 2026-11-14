@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { assertLocalTestDatabase } from '../../test/test-database.js';
 
 const databaseUrl = process.env.INGREDIENTS_TEST_DATABASE_URL;
 const suite = databaseUrl ? describe : describe.skip;
@@ -34,6 +35,7 @@ suite('Ingredients HTTP and database', () => {
     };
   }
   beforeAll(async () => {
+    assertLocalTestDatabase(databaseUrl);
     const target = new URL(databaseUrl!);
     if (
       !['localhost', '127.0.0.1'].includes(target.hostname) ||

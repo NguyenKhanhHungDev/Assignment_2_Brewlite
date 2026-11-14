@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { PaymentsPrismaAdapter } from './payments.prisma-adapter.js';
 import { OrdersPrismaAdapter } from '../orders/orders.prisma-adapter.js';
+import { assertLocalTestDatabase } from '../../test/test-database.js';
 
 const url = process.env.PAYMENTS_TEST_DATABASE_URL;
 describe.skipIf(!url)('Payments on an isolated PostgreSQL database', () => {
@@ -15,6 +16,7 @@ describe.skipIf(!url)('Payments on an isolated PostgreSQL database', () => {
   const originalUrl = process.env.DATABASE_URL;
 
   beforeAll(() => {
+    assertLocalTestDatabase(url);
     const target = new URL(url!);
     if (
       !['db', 'localhost', '127.0.0.1'].includes(target.hostname) ||

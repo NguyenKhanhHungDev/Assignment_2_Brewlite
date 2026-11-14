@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { OrderStateService as OrderStateServiceType } from './order-state.service.js';
 import type { LoyaltyService as LoyaltyServiceType } from '../loyalty/loyalty.service.js';
+import { assertLocalTestDatabase } from '../../test/test-database.js';
 
 describe.skipIf(process.env.RUN_DB_INTEGRATION !== '1')(
   'Phat: real PostgreSQL order state + loyalty',
@@ -17,6 +18,7 @@ describe.skipIf(process.env.RUN_DB_INTEGRATION !== '1')(
     let userId!: number;
 
     beforeAll(async () => {
+      assertLocalTestDatabase(process.env.DATABASE_URL);
       const url = process.env.DATABASE_URL;
       if (!url || !process.env.JWT_SECRET) {
         throw new Error('Set DATABASE_URL and JWT_SECRET in apps/api/.env');

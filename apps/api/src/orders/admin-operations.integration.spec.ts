@@ -12,6 +12,7 @@ import { PaymentsPrismaAdapter } from '../payments/payments.prisma-adapter.js';
 import { PaymentAdminService } from '../payments/payment-admin.service.js';
 import { ZalopayService } from '../payments/zalopay.service.js';
 import { PAYMENT_ORDERS_STORE } from '../payments/payments.contract.js';
+import { assertLocalTestDatabase } from '../../test/test-database.js';
 
 const target = process.env.OPERATIONS_TEST_DATABASE_URL;
 describe.skipIf(!target)('Admin operations PostgreSQL + HTTP', () => {
@@ -29,10 +30,11 @@ describe.skipIf(!target)('Admin operations PostgreSQL + HTTP', () => {
     querySandboxOrder: async () => ({ return_code: 3, is_processing: true }),
   };
   beforeAll(async () => {
+    assertLocalTestDatabase(target);
     const url = new URL(target!);
     if (
       !['127.0.0.1', 'localhost'].includes(url.hostname) ||
-      !/^\/brewlite_huy_test_operations$/.test(url.pathname)
+      !/^\/brewlite_huy_test_operations_test$/.test(url.pathname)
     )
       throw new Error('Dedicated local operations test database required');
     process.env.DATABASE_URL = target;
