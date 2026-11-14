@@ -2,14 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assertLocalTestDatabase } from './test-database.js';
 import { AppModule } from '../src/app.module.js';
 
 // Explicit opt-in: never silently use a developer's normal or remote database.
-const database = process.env.DATABASE_URL;
-if (!database) throw new Error('Set DATABASE_URL to a seeded local *_test database');
-const url = new URL(database);
-if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) ||
-    !url.pathname.endsWith('_test') || process.env.BREWLITE_DB_TESTS !== '1') {
+assertLocalTestDatabase(process.env.DATABASE_URL);
+if (process.env.BREWLITE_DB_TESTS !== '1') {
   throw new Error('Integration requires BREWLITE_DB_TESTS=1 and a local *_test database');
 }
 
