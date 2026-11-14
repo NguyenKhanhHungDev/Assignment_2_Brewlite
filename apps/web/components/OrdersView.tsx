@@ -13,6 +13,7 @@ import {
   type OrderStatus,
 } from "@/lib/orders";
 import { ApiError } from "@/lib/api";
+import useConnection from './useConnection';
 import {
   ArrowLeftIcon,
   RefreshIcon,
@@ -33,6 +34,7 @@ const terminalStatuses: OrderStatus[] = [
 ];
 
 export default function OrdersView({ orderId }: { orderId?: string }) {
+  const connection = useConnection();
   const auth = useAuth();
 
   return (
@@ -51,7 +53,7 @@ export default function OrdersView({ orderId }: { orderId?: string }) {
         </h1>
       </div>
 
-      {auth.loading ? <p role="status">Đang khôi phục phiên đăng nhập…</p> : !auth.session ? (
+      {connection !== 'online' ? <p role="status">Cần kết nối máy chủ để tải trạng thái đơn mới nhất.</p> : auth.loading ? <p role="status">Đang khôi phục phiên đăng nhập…</p> : !auth.session ? (
         <section className="bl-panel bl-empty">
           <div className="bl-empty-cart-visual" aria-hidden="true">
             <ShoppingBagIcon size={52} strokeWidth={1.3} />

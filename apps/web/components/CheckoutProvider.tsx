@@ -28,6 +28,7 @@ import {
 } from "@/lib/payments";
 import { useAuth } from "./AuthProvider";
 import { useCart } from "./CartProvider";
+import { assertConnected } from '@/lib/connection';
 
 type Draft = {
   owner: number;
@@ -296,6 +297,7 @@ function CheckoutStore({ children }: { children: ReactNode }) {
     recipientNameInput: string,
     promoCode?: string,
   ): Promise<OrderResult> {
+    assertConnected();
     if (processing.current) throw new Error("Yêu cầu đang được xử lý.");
     if (!state.ready || !session)
       throw new Error("Vui lòng đăng nhập trước khi tạo đơn.");
@@ -397,6 +399,7 @@ function CheckoutStore({ children }: { children: ReactNode }) {
   }
 
   async function startPayment(): Promise<string> {
+    assertConnected();
     if (processing.current) throw new Error("Yêu cầu đang được xử lý.");
     const purchase = current.current.purchase;
     if (!session || !purchase || purchase.owner !== session.userId)

@@ -9,6 +9,7 @@ import CartSummary from "@/components/CartSummary";
 import ItemPreferences from "@/components/ItemPreferences";
 import { requestJson } from "@/lib/api";
 import { parseProducts } from "@/lib/products";
+import useConnection from '@/components/useConnection';
 import { money, optionText, unitPrice } from "@/lib/pricing";
 import {
   ArrowLeftIcon,
@@ -21,6 +22,7 @@ import {
 } from "@/components/Icons";
 
 export default function CartPage() {
+  const connection = useConnection();
   const {
     lines,
     ready,
@@ -42,7 +44,7 @@ export default function CartPage() {
     let disposed = false;
     requestJson("/products")
       .then((data) => {
-        if (!disposed) reconcile(parseProducts(data));
+        if (!disposed) { reconcile(parseProducts(data)); setError(''); }
       })
       .catch(() => {
         if (!disposed)
@@ -56,7 +58,7 @@ export default function CartPage() {
     return () => {
       disposed = true;
     };
-  }, [ready, reconcile]);
+  }, [ready, reconcile, connection]);
 
   function update(key: string, quantity: number) {
     setError("");
@@ -270,7 +272,7 @@ export default function CartPage() {
               <div className="bl-cart-sidebar">
                 <CartSummary lines={lines} showBreakdown />
 
-                {checking ? (
+                {checking || connection !== 'online' ? (
                   <div className="bl-checking-box" role="status">
                     <span className="bl-spinner-dot" />
                     <span>Đang kiểm tra tồn kho tại quầy...</span>
