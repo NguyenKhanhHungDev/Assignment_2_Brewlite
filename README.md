@@ -197,3 +197,12 @@ node scripts/check-compose.mjs
 - Health Web: `GET http://127.0.0.1:3000/api/health` (trả `200` `{ status: "ok", service: "web" }`; hỗ trợ `?deep=1` kiểm tra thêm API upstream).
 - Nếu cổng 3000/3001 đang bận trên máy local, chỉnh `WEB_PORT` và `API_PORT` trong `.env` (hoặc truyền biến môi trường) và truyền `--api-url` / `--web-url` cho `scripts/check-compose.mjs`.
 - Trong môi trường không muốn tự chạy seed demo, đặt `RUN_SEED=false`. Dừng container bằng `docker compose down` (giữ nguyên volume dữ liệu `brewlite_pg_data`). Xem [minh chứng Docker Compose và health check](docs/evidence/task-5.2.4-docker-compose.md).
+
+## Triển khai production lên AWS EC2 và CD bằng GitHub Actions (Task 5.3.1 & 5.4.1)
+
+Cấu hình production chạy trên Ubuntu Server (`linux/amd64`) dùng `compose.prod.yaml`, reverse proxy `deploy/caddy/Caddyfile` (TLS tự động cho domain DuckDNS), và workflow `.github/workflows/cd.yml` (chạy trên `push` vào `main` hoặc `workflow_dispatch`):
+
+- **Chất lượng & build image**: `cd.yml` chạy kiểm tra API/Web rồi build và push 3 image lên GHCR (`brewlite-api`, `brewlite-api-migrate`, `brewlite-web`) gắn tag `${{ github.sha }}` và `latest`.
+- **Triển khai an toàn**: `deploy/scripts/deploy.sh` kiểm tra biến môi trường `.env.prod`, xác nhận `db` không mở port `5432` ra host, backup PostgreSQL (`pg_dump` nén `.sql.gz` trong `backups/`), chạy `migrate` trước khi thay thế container (`api`, `web`, `caddy`), và lưu `.previous-release` để rollback bằng `deploy/scripts/rollback.sh`.
+- **Kiểm tra sau deploy**: chạy `scripts/check-compose.mjs` qua `https://<APP_DOMAIN>` và kiểm tra cổng `5432` không truy cập được từ ngoài Internet.
+- **Secrets & thiết lập EC2**: sử dụng `.env.prod.example` làm mẫu cho `/opt/brewlite/.env.prod` trên EC2 và cấu hình secrets trong GitHub (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `APP_DOMAIN`, tùy chọn `EC2_PORT`, `EC2_DEPLOY_PATH`). Chi tiết xem [tài liệu triển khai](docs/deployment.md) và [minh chứng Task 5.3.1 & 5.4.1](docs/evidence/task-5.3.1-5.4.1-deploy.md).
