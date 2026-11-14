@@ -1,8 +1,13 @@
-import { render, screen, within, waitFor, act } from "@testing-library/react";
+import { render as renderComponent, screen, within, waitFor, act } from "@testing-library/react";
+import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import MenuCatalog from "@/components/MenuCatalog";
 import { products } from "./fixtures";
+import { MenuProviders } from "./menu-providers";
+
+const render = (ui: ReactNode) => renderComponent(ui, { wrapper: MenuProviders });
+beforeEach(() => localStorage.clear());
 
 const menu = () => screen.getByRole("region", { name: "Chọn thức uống bạn yêu thích" });
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -96,16 +101,32 @@ describe("Menu search and categories", () => {
     expect(screen.getByRole("button", { name: /^Tất cả/ })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("filters by API category, not words in a product name", async () => {
+  it("combines API categories with legacy name-based suggestions", async () => {
     mockFetch().mockResolvedValue(reply(products));
     const user = userEvent.setup();
     render(<MenuCatalog />);
     await within(menu()).findByRole("list");
     await user.click(screen.getByRole("button", { name: "Món sáng tạo" }));
-    expect(within(menu()).getAllByRole("article")).toHaveLength(1);
+    expect(within(menu()).getAllByRole("article")).toHaveLength(2);
     expect(within(menu()).getByRole("heading", { name: "Matcha latte" })).toBeVisible();
-    expect(within(menu()).queryByRole("heading", { name: "Cà phê muối" })).not.toBeInTheDocument();
+    expect(within(menu()).getByRole("heading", { name: "Cà phê muối" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Cà phê truyền thống" }));
     expect(within(menu()).getAllByRole("article")).toHaveLength(2);
+  });
+
+  it("finds coffee and tea by name when the API category is OTHER", async () => {
+    mockFetch().mockResolvedValue(reply([
+      { ...products[0], category: "OTHER", name: "Bạc xỉu" },
+      { ...products[2], category: "OTHER" },
+    ]));
+    const user = userEvent.setup();
+    render(<MenuCatalog />);
+    await within(menu()).findByRole("list");
+    await user.click(screen.getByRole("button", { name: "Cà phê truyền thống" }));
+    expect(within(menu()).getAllByRole("article")).toHaveLength(1);
+    expect(within(menu()).getByRole("heading", { name: "Bạc xỉu" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Trà trái cây & Trà sữa" }));
+    expect(within(menu()).getAllByRole("article")).toHaveLength(1);
+    expect(within(menu()).getByRole("heading", { name: "Trà đào" })).toBeVisible();
   });
 });

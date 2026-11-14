@@ -711,7 +711,7 @@ a {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.bl-carousel-quick-btn:hover {
+.bl-carousel-quick-btn:hover:not(:disabled) {
   background: var(--bl-caramel);
   color: #ffffff;
   border-color: var(--bl-caramel);
@@ -1202,6 +1202,14 @@ a {
   padding: 8px 14px;
   font-size: 0.88rem;
   gap: 6px;
+}
+.bl-product-actions > * { min-width: 0; white-space: normal; text-align: center; }
+.bl-carousel-quick-btn { min-height: 44px; flex-shrink: 0; }
+.bl-carousel-quick-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.bl-carousel-price-row { flex-wrap: wrap; }
+.bl-product-image-wrap:focus-visible, .bl-carousel-link-wrap:focus-visible {
+  outline: 3px solid var(--bl-caramel);
+  outline-offset: 3px;
 }
 
 /* Skeleton Shimmer */

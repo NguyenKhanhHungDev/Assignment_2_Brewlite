@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import type { Product } from "@/lib/products";
+import Link from "next/link";
 import ProductImage from "./ProductImage";
+import QuickAddButton from "./QuickAddButton";
 import {
   ArrowRightIcon,
   SparklesIcon,
@@ -131,7 +133,8 @@ export default function MenuHero({
               </div>
 
               {/* Product Visual & Details */}
-              <div
+              <Link
+                href={`/products/${activeProduct.id}`}
                 className="bl-carousel-link-wrap"
                 aria-label={`Khám phá món: ${activeProduct.name}`}
               >
@@ -146,12 +149,13 @@ export default function MenuHero({
 
                 <div className="bl-carousel-info">
                   <h3 className="bl-carousel-title">{activeProduct.name}</h3>
-                  <div className="bl-carousel-price-row">
-                    <span className="bl-carousel-price">
-                      {activeProduct.price.toLocaleString("vi-VN")} VND
-                    </span>
-                  </div>
                 </div>
+              </Link>
+              <div className="bl-carousel-info bl-carousel-price-row">
+                <span className="bl-carousel-price">
+                  {activeProduct.price.toLocaleString("vi-VN")} VND
+                </span>
+                <QuickAddButton product={activeProduct} className="bl-carousel-quick-btn" />
               </div>
 
               {/* Carousel Navigation Controls */}
