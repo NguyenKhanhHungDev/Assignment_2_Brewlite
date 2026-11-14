@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import type { Product } from "@/lib/products";
 import ProductImage from "./ProductImage";
+import QuickAddButton from "./QuickAddButton";
 import { ExclamationIcon } from "./Icons";
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -17,7 +18,11 @@ export default function ProductCard({ product }: { product: Product }) {
       className={`bl-product-card ${isSoldOut ? "bl-product-soldout" : ""}`}
       aria-label={`${product.name}, giá ${product.price.toLocaleString("vi-VN")} đồng${isSoldOut ? ", hiện đã hết hàng" : ""}`}
     >
-      <div className="bl-product-image-wrap">
+      <Link
+        href={`/products/${product.id}`}
+        className="bl-product-image-wrap"
+        aria-label={`Xem chi tiết ${product.name}`}
+      >
         <ProductImage src={product.imageUrl} name={product.name} />
 
         {isSoldOut ? (
@@ -27,7 +32,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </span>
           </div>
         ) : null}
-      </div>
+      </Link>
 
       <div className="bl-product-info">
         <div className="bl-product-title-row">
@@ -48,6 +53,16 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <p className="bl-stock-hint">{isSoldOut ? "Tạm hết hàng" : "Còn hàng"} · Giá size M</p>
+        <div className="bl-product-actions">
+          <Link
+            href={`/products/${product.id}`}
+            className="bl-button bl-button-secondary bl-btn-detail"
+            aria-label={`Tùy chọn cho ${product.name}`}
+          >
+            Tùy chọn
+          </Link>
+          <QuickAddButton product={product} />
+        </div>
       </div>
     </article>
   );

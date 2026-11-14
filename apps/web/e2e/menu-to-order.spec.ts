@@ -10,7 +10,7 @@ test("customer completes the browser flow from menu to order confirmation", asyn
   await expect(
     page.getByRole("heading", { name: "Chọn thức uống bạn yêu thích" }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Cà phê sữa" }).click();
+  await page.getByRole("link", { name: "Cà phê sữa", exact: true }).click();
 
   await expect(page).toHaveURL(/\/products\/[1-9]\d*$/);
   await expect(

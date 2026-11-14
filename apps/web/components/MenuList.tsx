@@ -98,9 +98,12 @@ export default function MenuList({
       }
 
       // Category filter
-      if (activeCategory === "coffee") return product.category === "COFFEE";
-      if (activeCategory === "tea") return product.category === "TEA";
-      if (activeCategory === "special") return product.category === "OTHER";
+      if (activeCategory === "coffee")
+        return product.category === "COFFEE" || name.includes("cà phê") || name.includes("bạc xỉu");
+      if (activeCategory === "tea")
+        return product.category === "TEA" || (name.includes("trà") && !name.includes("cà phê"));
+      if (activeCategory === "special")
+        return product.category === "OTHER" || name.includes("matcha") || name.includes("cacao") || name.includes("muối");
       if (activeCategory === "bestseller") {
         return (
           name.includes("cà phê sữa") ||
