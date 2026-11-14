@@ -92,17 +92,63 @@ jobs:
       - name: Build
         run: npm run build
 
+  browser-e2e:
+    name: Browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: apps/web
+
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run menu-to-order browser test
+        run: npm run test:e2e
+
+      - name: Upload browser evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-e2e-evidence
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
   required:
     name: PR quality gate
     if: ${{ always() }}
-    needs: [api, web]
+    needs: [api, web, browser-e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Require API and Web success
+      - name: Require API, Web and Browser E2E success
         env:
           API_RESULT: ${{ needs.api.result }}
           WEB_RESULT: ${{ needs.web.result }}
+          E2E_RESULT: ${{ needs.browser-e2e.result }}
         run: |
           test "$API_RESULT" = success
           test "$WEB_RESULT" = success
+          test "$E2E_RESULT" = success

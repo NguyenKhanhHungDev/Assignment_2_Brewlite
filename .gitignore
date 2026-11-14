@@ -19,3 +19,5 @@ apps/api/src/generated/
 # Local browser verification artifacts
 .playwright-cli/
 output/playwright/
+apps/web/playwright-report/
+apps/web/test-results/

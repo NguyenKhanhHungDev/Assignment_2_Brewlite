@@ -16,6 +16,7 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Hướng dẫn hoàn thành repo](docs/planning/repository-guide.md)
 - [Ma trận truy vết](docs/traceability-matrix.md)
 - [PWA: chạy local, kiểm tra offline và hướng dẫn HTTPS](docs/evidence/task-5.1.2-pwa.md)
+- [E2E trình duyệt: từ menu đến xác nhận đơn](docs/evidence/task-5.2.2-browser-e2e.md)
 - [Docker Compose và kiểm tra sức khỏe (Task 5.2.4)](docs/evidence/task-5.2.4-docker-compose.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
 
@@ -93,10 +94,15 @@ npm --prefix apps/api run test:e2e
 npm --prefix apps/api run build
 npm --prefix apps/web run lint
 npm --prefix apps/web test
+npm --prefix apps/web run test:e2e
 npm --prefix apps/web run build
 ```
 
-`npm test` chạy unit test Products/RecipeMenu, seed và nghiệp vụ giá/lựa chọn Orders. `test:e2e` kiểm tra HTTP Products với repository giả, không cần DB và không phải E2E đặt/thanh toán. Web có test unit/component cho menu, giá và khẩu vị chạy bằng `npm --prefix apps/web test`; dùng `npm --prefix apps/web run test:watch` khi phát triển. Test Web dùng jsdom và mock fetch/Image cho menu, không cần DB; không thay thế kiểm tra CSS/mobile hoặc E2E trình duyệt. CI ở #20. Xem [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
+`npm test` của API chạy unit test Products/RecipeMenu, seed và nghiệp vụ giá/lựa chọn Orders. `npm --prefix apps/api run test:e2e` kiểm tra HTTP với repository giả, không cần DB và không phải E2E trình duyệt. Web có test unit/component bằng Vitest/jsdom; dùng `npm --prefix apps/web run test:watch` khi phát triển.
+
+`npm --prefix apps/web run test:e2e` chạy Playwright/Chromium thật qua menu → chi tiết món → giỏ → đăng ký/đăng nhập → checkout → xác nhận đơn. Mặc định lệnh tự mở API fixture cô lập để CI không ghi database; xem [phạm vi, kết quả và cách chạy với stack PostgreSQL thật](docs/evidence/task-5.2.2-browser-e2e.md). Muốn nhìn thao tác trực tiếp, dùng `npm --prefix apps/web run test:e2e:headed`.
+
+CI ở #20. Xem thêm [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
 
 Kiểm thử với PostgreSQL thật cần DB **local riêng có tên kết thúc `_test`** và đã migrate/seed. Không dùng DB làm việc đang có dữ liệu. Ví dụ tạo DB test trong container trên một lần:
 
