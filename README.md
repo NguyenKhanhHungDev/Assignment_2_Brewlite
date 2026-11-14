@@ -82,8 +82,26 @@ npm --prefix apps/web run dev
 - ID sai định dạng/không thuộc 1–2147483647 trả 400; món không tồn tại hoặc ngừng bán trả 404. Danh sách rỗng trả `[]`.
 - Ảnh món kế thừa nằm trong `apps/web/public/images/products/`. Khi thay ảnh, giữ tên file khớp `imageUrl` trong API (ví dụ `ca-phe-sua.jpg`); thiếu ảnh hoặc ảnh lỗi sẽ hiển thị “Ảnh đang cập nhật”.
 - Web gọi `/products` cùng origin, Next.js proxy tới API; không cần mở CORS cho luồng menu. Nếu đổi cổng API, sao chép `apps/web/.env.example` thành `apps/web/.env.local` (không ghi đè file đã có), chỉnh `API_INTERNAL_URL` rồi restart Web. Production cần build lại với đúng URL API.
-- Menu giữ thiết kế từ repo cũ, lọc theo danh mục API và tìm không phân biệt dấu/hoa thường/đ với d. Chưa có trang tùy chọn, giỏ hàng hoặc health endpoint trong phần này.
+- Menu lọc theo danh mục API kết hợp tên món và tìm không phân biệt dấu/hoa thường/đ với d. Bấm ảnh, tên món hoặc **Tùy chọn** để mở chi tiết; **Thêm nhanh** ở thẻ món và banner thêm 1 ly size M không topping, giới hạn theo tồn size M và số ly trong giỏ.
 - Xem [nguồn và kiểm tra giao diện menu](docs/evidence/task-4.3.2-menu.md).
+
+## Chạy thử trang Admin
+
+Chuẩn bị PostgreSQL local, cài dependency và migrate/seed theo phần trên, rồi chạy API và Web trong hai terminal. API cần `JWT_SECRET` trong `apps/api/.env`. Web cần `API_INTERNAL_URL=http://localhost:3001` trong `apps/web/.env.local`; đặt cùng một `BFF_PROXY_SECRET` ở cả hai file môi trường và restart ứng dụng sau khi đổi cấu hình. Dùng `apps/web/.env.example` làm mẫu, không ghi đè file môi trường đã có.
+
+1. Mở [trang đăng nhập](http://localhost:3000/login). Nếu chưa có tài khoản local, chọn **Đăng ký mới** để tạo tài khoản.
+2. Tài khoản đăng ký mới mặc định có role `CUSTOMER`; seed hiện không tạo tài khoản Admin. Nếu đã có tài khoản `ADMIN`, dùng tài khoản đó và chuyển tới bước 4.
+3. Để cấp quyền cho tài khoản demo trên **database local**, mở terminal thứ ba từ gốc repo:
+
+   ```bash
+   cd apps/api
+   ./node_modules/.bin/prisma studio --config prisma7.config.ts --port 5555
+   ```
+
+   Mở [Prisma Studio](http://localhost:5555), vào bảng `User`, tìm đúng email tài khoản demo, đổi trường `role` thành `ADMIN` rồi lưu.
+4. Đăng nhập lại bằng tài khoản đó, mở [trang tổng quan Admin](http://localhost:3000/admin). Trang hiển thị số nguyên liệu, công thức, tổng đơn và nguyên liệu có lượng khả dụng dưới hoặc bằng ngưỡng tồn. Khi tải lỗi, bấm **Thử lại**; nếu chưa có đơn, tổng đơn hiển thị 0.
+
+Từ thanh điều hướng Admin có thể mở **Nguyên liệu**, **Công thức & món**, **Đơn hàng** và **Đối soát**. Tài khoản `CUSTOMER` truy cập trang quản trị sẽ thấy **403 — Không có quyền truy cập**.
 
 ## Kiểm tra và build
 
