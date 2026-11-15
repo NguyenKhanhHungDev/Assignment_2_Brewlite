@@ -55,7 +55,7 @@ Nguồn yêu cầu: [SRS](../requirements/srs.md), [use-case checkout](../requir
 | Chi tiết và đồng hồ | FR-18–FR-19, FR-22 | `apps/api/src/payments/payment-details.service.ts`, `apps/web/lib/session-server.ts` |
 | Lớp và trạng thái | FR-12–FR-22, FR-27, FR-29–FR-30 | `apps/api/prisma/schema.prisma`, `apps/api/src/orders/order-state.ts` |
 
-Bảng này hỗ trợ review sơ đồ, chưa thay thế ma trận truy vết toàn dự án hoặc chứng minh test đã đạt. Repo mới vẫn cần tích hợp code, chạy kiểm thử và có xác nhận nghiệm thu.
+Bảng này hỗ trợ review sơ đồ, chưa thay thế ma trận truy vết toàn dự án hoặc chứng minh test đã đạt. Repo mới đã tích hợp các module; truy vết code/test hiện tại nằm trong [ma trận](../traceability-matrix.md). Các tham chiếu repo cũ ở bảng này mô tả nguồn thiết kế, không phải kết quả chạy mới.
 
 ## 6. Kết xuất
 
@@ -67,3 +67,7 @@ plantuml -tpng docs/diagrams/activity-checkout.puml docs/diagrams/sequence-check
 ```
 
 Nếu dùng JAR, thay `plantuml` bằng `java -jar /duong-dan/plantuml.jar`. Kiểm tra cú pháp và xem lại ảnh sau mỗi lần sửa nguồn.
+
+## 7. Sơ đồ triển khai hiện tại
+
+[Deployment PUML](deployment.puml) và [PNG](deployment.png) được đồng bộ ngày 15/11/2026 theo `compose.prod.yaml`, Caddyfile và workflow CI/CD. Xem [Task 3.2](../deployment.md) để phân biệt cấu hình trong repo, kết quả GitHub của commit nền và phần còn chờ nghiệm thu.

@@ -1,32 +1,38 @@
 # BrewLite — Assignment 2
 
-Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu cầu đến triển khai.
+BrewLite là website đặt đồ uống và nhận món tại quầy. Khách hàng chọn món, đặt đơn, thanh toán thử qua ZaloPay Sandbox và theo dõi tiến độ. Admin quản lý món, nguyên liệu, đơn hàng và giao dịch.
 
-## Tài liệu
+**Địa chỉ demo:** [Mở BrewLite](https://brewlite-a2.duckdns.org) · [Menu API](https://brewlite-a2.duckdns.org/products) · [Health API](https://brewlite-a2.duckdns.org/health)
 
-[Bảng chỉ dẫn Task 1–3 và lịch sử tài liệu](docs/README.md).
+## Chức năng chính
 
-- [Bối cảnh và phạm vi](docs/requirements/context-and-scope.md)
-- [Đặc tả yêu cầu SRS](docs/requirements/srs.md)
-- [Use-case đặt và thanh toán](docs/requirements/use-case-checkout.md)
-- [Sơ đồ Task 2](docs/diagrams/README.md)
-- [Kiến trúc Task 3.1](docs/architecture/architecture.md)
-- [Triển khai Task 3.2](docs/deployment.md)
-- [Backlog dự kiến](docs/planning/assignment-2-backlog.md)
-- [Hướng dẫn hoàn thành repo](docs/planning/repository-guide.md)
-- [Ma trận truy vết](docs/traceability-matrix.md)
-- [PWA: chạy local, kiểm tra offline và hướng dẫn HTTPS](docs/evidence/task-5.1.2-pwa.md)
-- [E2E trình duyệt: từ menu đến xác nhận đơn](docs/evidence/task-5.2.2-browser-e2e.md)
-- [Docker Compose và kiểm tra sức khỏe (Task 5.2.4)](docs/evidence/task-5.2.4-docker-compose.md)
-- [Backup, restore, migration và rollback (Task 5.3.2)](docs/database-backup-rollback.md)
-- [Quy trình nhánh và pull request](docs/planning/workflow.md)
-- [Release notes v1.0.0](docs/release/release-notes-v1.0.0.md) và [quy trình tag/release](docs/release/release-procedure.md)
-- [Kịch bản demo](docs/handover/demo-script.md) và [phiếu xác nhận của người ngoài nhóm](docs/handover/outsider-verification.md)
-- [Sprint Review](docs/sprint/sprint-review.md) và [Retrospective](docs/sprint/retrospective.md)
+| Người dùng | Chức năng |
+|---|---|
+| Khách hàng | Xem/tìm/lọc món; chọn size, topping, đường/đá; quản lý giỏ và dùng mã BREW10. |
+| Thành viên | Đăng ký/đăng nhập, sửa hồ sơ, đổi mật khẩu; đặt/thanh toán đơn, xem lịch sử, điểm và hạng. |
+| Admin | Quản lý công thức/món, nguyên liệu và tồn kho; xử lý đơn, xem và kiểm tra lại giao dịch. |
 
-Production chạy trên AWS EC2 tại https://brewlite-a2.duckdns.org (xem phần triển khai bên dưới và [minh chứng](docs/evidence/task-5.3.1-5.4.1-deploy.md)). Các hạn chế còn lại được liệt kê trong [release notes](docs/release/release-notes-v1.0.0.md).
+Hệ thống có PWA và giữ giỏ khi mất mạng. Đặt đơn và thanh toán cần kết nối Internet; thanh toán chỉ dùng **Sandbox, không thu tiền thật**. Code, test và phần còn chờ nghiệm thu được ghi trong [ma trận FR/NFR](docs/traceability-matrix.md).
 
-## Bắt đầu nhanh (người mới, chỉ cần Git, Docker và Node.js 24)
+## Công nghệ và cấu trúc
+
+- **Giao diện:** Next.js 16, React 19, TypeScript, Tailwind CSS.
+- **API và dữ liệu:** NestJS 12, Prisma 7, PostgreSQL 17.
+- **Kiểm thử:** Vitest, Playwright và Postman/Newman.
+- **Triển khai:** Docker Compose, GitHub Actions, GHCR, AWS EC2 và Caddy.
+
+```text
+apps/web/       Giao diện khách hàng, Admin và BFF
+apps/api/       REST API, nghiệp vụ, Prisma và migration
+docs/           Yêu cầu, sơ đồ, kiến trúc và minh chứng
+scripts/        Kiểm tra ứng dụng, hiệu năng và vận hành DB
+deploy/         Caddy và script triển khai
+.github/        Workflow CI/CD và mẫu pull request
+```
+
+## Chạy local bằng Docker Compose
+
+**Cần có:** Git, Docker với Compose v2 và Node.js 24.x để chạy script kiểm tra. Các lệnh bên dưới chạy từ thư mục gốc repo.
 
 ```bash
 git clone https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite.git
@@ -36,101 +42,55 @@ docker compose up -d --build --wait
 node scripts/check-compose.mjs
 ```
 
-Mở http://localhost:3000. Lệnh kiểm tra phải đạt 7/7 bước. `.env.example` chỉ chứa giá trị local và khóa ZaloPay Sandbox công khai; **không dùng cho production**. Tắt stack bằng `docker compose down` (giữ dữ liệu). Nếu cổng 3000/3001 đang bận, xem phần Docker Compose bên dưới. Muốn chạy từng service riêng hoặc chạy test, xem các phần tiếp theo.
+Compose tự khởi động PostgreSQL, chạy migration/seed rồi mở API và Web. Khi thành công, script kiểm tra báo **7/7 bước đạt**.
 
-## Cài đặt và chuẩn bị database local
+| Thành phần | Địa chỉ local |
+|---|---|
+| Website | [localhost:3000](http://localhost:3000) |
+| Menu API | [localhost:3001/products](http://localhost:3001/products) |
+| Health API | [localhost:3001/health](http://localhost:3001/health) |
+| Health Web | [localhost:3000/api/health](http://localhost:3000/api/health) |
 
-Cần Node.js **24.x**, npm đi kèm và Git. Có thể dùng `nvm use` theo `.nvmrc` nếu máy đã có nvm. Web và API giữ package/lockfile riêng như repo nguồn; chạy lệnh từ gốc repository.
+API không có route `/`, nên truy cập gốc cổng 3001 nhận 404 là bình thường. DB chỉ mở trong mạng Compose. `.env.example` là cấu hình demo local, không dùng cho production; lệnh `cp -n` giữ nguyên file môi trường đã có.
 
-```bash
-npm ci --prefix apps/api
-npm ci --prefix apps/web
-cp -n .env.example apps/api/.env
-```
-
-API hiện cần PostgreSQL. Nếu đã có `apps/api/.env`, bổ sung `DATABASE_URL` theo mẫu, không ghi đè cấu hình đang dùng. Chỉ trỏ tới DB local riêng cho dự án.
-
-Ví dụ tạo PostgreSQL 17 local bằng Docker **một lần** (cổng 5434, mật khẩu mẫu chỉ dùng local):
+Dừng ứng dụng và giữ dữ liệu:
 
 ```bash
-docker run -d --name brewlite-menu-db \
-  -e POSTGRES_USER=brewlite \
-  -e POSTGRES_PASSWORD=brewlite_local \
-  -e POSTGRES_DB=brewlite_local \
-  -p 127.0.0.1:5434:5432 \
-  -v brewlite_menu_pgdata:/var/lib/postgresql/data \
-  postgres:17
-
-docker exec brewlite-menu-db pg_isready -U brewlite -d brewlite_local
+docker compose down
 ```
 
-Chờ database báo nhận kết nối rồi chạy:
-
-```bash
-npm --prefix apps/api run db:generate
-npm --prefix apps/api run db:validate
-npm --prefix apps/api run db:migrate
-npm --prefix apps/api run db:seed
-```
-
-`db:migrate` áp dụng nguyên chuỗi migration của repo nguồn. Schema có cả bảng dành cho module sau; hiện chỉ Products API được mount. Seed chỉ khởi tạo menu trên DB rỗng, không phục hồi demo nếu DB đã có dữ liệu. Không reset DB để chạy lại seed.
-
-Lần sau dùng `docker start brewlite-menu-db`; khi cần dừng dùng `docker stop brewlite-menu-db`. Dữ liệu nằm trong volume; không xóa volume để cập nhật ứng dụng.
-
-## Chạy Web và API
-
-Mở hai terminal:
-
-```bash
-npm --prefix apps/api run start:dev
-```
-
-```bash
-npm --prefix apps/web run dev
-```
-
-- Web: http://localhost:3000 — menu BrewLite.
-- API: http://localhost:3001 — `GET /` trả HTTP 404 vì không đăng ký route gốc; dùng `/products` để xem menu.
-- API đọc `apps/api/.env`; root `.env.example` là mẫu để sao chép, không được ứng dụng tự đọc. Không ghi đè `.env` đã có.
-- Đổi cổng API bằng `PORT` trong `apps/api/.env`; đổi cổng Web bằng `PORT=3002 npm --prefix apps/web run dev`.
-- Menu công khai: `GET http://localhost:3001/products`; chi tiết: `GET http://localhost:3001/products/1` (dùng ID thật từ danh sách).
-- Response gồm `id`, `name`, `price` (size M, VND), `imageUrl`, `category`, `stock`, `stockBySize`. Chỉ trả công thức đang bán; số lượng khả dụng tính từ tồn trừ lượng đã giữ.
-- ID sai định dạng/không thuộc 1–2147483647 trả 400; món không tồn tại hoặc ngừng bán trả 404. Danh sách rỗng trả `[]`.
-- Ảnh món kế thừa nằm trong `apps/web/public/images/products/`. Khi thay ảnh, giữ tên file khớp `imageUrl` trong API (ví dụ `ca-phe-sua.jpg`); thiếu ảnh hoặc ảnh lỗi sẽ hiển thị “Ảnh đang cập nhật”.
-- Web gọi `/products` cùng origin, Next.js proxy tới API; không cần mở CORS cho luồng menu. Nếu đổi cổng API, sao chép `apps/web/.env.example` thành `apps/web/.env.local` (không ghi đè file đã có), chỉnh `API_INTERNAL_URL` rồi restart Web. Production cần build lại với đúng URL API.
-- Menu lọc theo danh mục API kết hợp tên món và tìm không phân biệt dấu/hoa thường/đ với d. Bấm ảnh, tên món hoặc **Tùy chọn** để mở chi tiết; **Thêm nhanh** ở thẻ món và banner thêm 1 ly size M không topping, giới hạn theo tồn size M và số ly trong giỏ.
-- Xem [nguồn và kiểm tra giao diện menu](docs/evidence/task-4.3.2-menu.md).
+Không thêm `-v` nếu muốn giữ dữ liệu. Nếu cổng 3000/3001 đang bận, đổi `WEB_PORT`/`API_PORT` trong `.env`, khởi động lại stack và truyền URL tương ứng cho script kiểm tra. Xem [hướng dẫn Compose](docs/evidence/task-5.2.4-docker-compose.md).
 
 ## Chạy thử trang Admin
 
-Chuẩn bị PostgreSQL local, cài dependency và migrate/seed theo phần trên, rồi chạy API và Web trong hai terminal. API cần `JWT_SECRET` trong `apps/api/.env`. Web cần `API_INTERNAL_URL=http://localhost:3001` trong `apps/web/.env.local`; đặt cùng một `BFF_PROXY_SECRET` ở cả hai file môi trường và restart ứng dụng sau khi đổi cấu hình. Dùng `apps/web/.env.example` làm mẫu, không ghi đè file môi trường đã có.
-
-1. Mở [trang đăng nhập](http://localhost:3000/login). Nếu chưa có tài khoản local, chọn **Đăng ký mới** để tạo tài khoản.
-2. Tài khoản đăng ký mới mặc định có role `CUSTOMER`; seed hiện không tạo tài khoản Admin. Nếu đã có tài khoản `ADMIN`, dùng tài khoản đó và chuyển tới bước 4.
-3. Để cấp quyền cho tài khoản demo trên **database local**, mở terminal thứ ba. Nếu dùng container `brewlite-menu-db` theo phần cài đặt phía trên, chạy:
-
-   ```bash
-   docker exec -it brewlite-menu-db psql -U brewlite -d brewlite_local
-   ```
-
-   Nếu đang chạy toàn bộ ứng dụng bằng Docker Compose, chạy lệnh sau tại gốc repo để mở đúng database của stack đó:
+1. Mở [trang đăng nhập local](http://localhost:3000/login), chọn **Đăng ký mới**. Tài khoản mới mặc định là `CUSTOMER`; seed không tạo Admin.
+2. Mở DB của stack local:
 
    ```bash
    docker compose exec db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
    ```
 
-   Trong `psql`, thay email dưới đây bằng email vừa đăng ký rồi chạy:
+3. Thay email dưới đây bằng email vừa đăng ký, rồi chạy SQL **chỉ trên DB local/test**:
 
    ```sql
    UPDATE "User" SET "role" = 'ADMIN' WHERE "email" = 'admin.demo@example.com';
    ```
 
-   Kết quả phải là `UPDATE 1`. Nếu là `UPDATE 0`, kiểm tra lại email và database đang kết nối. Nhập `\q` để thoát. Cách cấp quyền trực tiếp này dùng cho tài khoản demo local, giống repo nguồn.
-4. Đăng nhập lại bằng tài khoản đó, mở [trang tổng quan Admin](http://localhost:3000/admin). Trang hiển thị số nguyên liệu, công thức, tổng đơn và nguyên liệu có lượng khả dụng dưới hoặc bằng ngưỡng tồn. Khi tải lỗi, bấm **Thử lại**; nếu chưa có đơn, tổng đơn hiển thị 0.
+   Kết quả cần là `UPDATE 1`. Nếu là `UPDATE 0`, kiểm tra lại email và DB. Nhập `\q` để thoát.
+4. Đăng nhập lại và mở [trang Admin](http://localhost:3000/admin). Tài khoản `CUSTOMER` không có quyền truy cập trang này.
 
-Từ thanh điều hướng Admin có thể mở **Nguyên liệu**, **Công thức & món**, **Đơn hàng** và **Đối soát**. Tài khoản `CUSTOMER` truy cập trang quản trị sẽ thấy **403 — Không có quyền truy cập**.
+## Kiểm thử và build
 
-## Kiểm tra và build
+Để chạy test bằng Node.js trên máy, cài dependency và tạo Prisma Client trước. File `apps/api/.env` dưới đây là cấu hình **local**, không lấy từ production:
+
+```bash
+npm ci --prefix apps/api
+npm ci --prefix apps/web
+cp -n .env.example apps/api/.env
+npm --prefix apps/api run db:generate
+```
+
+Chạy kiểm tra API và Web:
 
 ```bash
 npm --prefix apps/api run lint
@@ -139,104 +99,46 @@ npm --prefix apps/api run test:e2e
 npm --prefix apps/api run build
 npm --prefix apps/web run lint
 npm --prefix apps/web test
-npm --prefix apps/web run test:e2e
 npm --prefix apps/web run build
 ```
 
-`npm test` của API chạy unit test Products/RecipeMenu, seed và nghiệp vụ giá/lựa chọn Orders. `npm --prefix apps/api run test:e2e` kiểm tra HTTP với repository giả, không cần DB và không phải E2E trình duyệt. Web có test unit/component bằng Vitest/jsdom; dùng `npm --prefix apps/web run test:watch` khi phát triển.
-
-`npm --prefix apps/web run test:e2e` chạy Playwright/Chromium thật qua menu → chi tiết món → giỏ → đăng ký/đăng nhập → checkout → xác nhận đơn. Mặc định lệnh tự mở API fixture cô lập để CI không ghi database; xem [phạm vi, kết quả và cách chạy với stack PostgreSQL thật](docs/evidence/task-5.2.2-browser-e2e.md). Muốn nhìn thao tác trực tiếp, dùng `npm --prefix apps/web run test:e2e:headed`.
-
-CI ở #20. Xem thêm [minh chứng kiểm thử menu](docs/evidence/task-4.3.3-tests.md).
-
-Kiểm thử với PostgreSQL thật cần DB **local riêng có tên kết thúc `_test`** và đã migrate/seed. Không dùng DB làm việc đang có dữ liệu. Ví dụ tạo DB test trong container trên một lần:
+Chạy E2E trình duyệt; lần đầu cần cài Chromium:
 
 ```bash
-docker exec brewlite-menu-db createdb -U brewlite brewlite_menu_test
-DATABASE_URL=postgresql://brewlite:brewlite_local@127.0.0.1:5434/brewlite_menu_test npm --prefix apps/api run db:migrate
-DATABASE_URL=postgresql://brewlite:brewlite_local@127.0.0.1:5434/brewlite_menu_test npm --prefix apps/api run db:seed
-DATABASE_URL=postgresql://brewlite:brewlite_local@127.0.0.1:5434/brewlite_menu_test BREWLITE_DB_TESTS=1 npm --prefix apps/api run test:integration
+npm --prefix apps/web exec -- playwright install chromium
+npm --prefix apps/web run test:e2e
 ```
 
-Suite integration yêu cầu dữ liệu demo ban đầu (10 món); không tự reset hoặc sửa DB. Xem [nguồn và minh chứng Products API](docs/evidence/task-4.3.1-products.md).
+API `test:e2e` kiểm tra HTTP với repository giả. E2E trình duyệt mặc định dùng API fixture để kiểm tra luồng Web/BFF. Hai loại này không thay thế kiểm thử PostgreSQL hoặc một giao dịch ZaloPay thật trong môi trường Sandbox. Test DB bị bỏ qua không được tính là đạt.
 
-Kiểm tra tự động việc khởi động Web/API sau khi chuẩn bị DB (dùng cổng trống và tự dừng tiến trình kiểm tra; API đọc `.env`):
+| Cần kiểm tra | Hướng dẫn / kết quả |
+|---|---|
+| Integration và migration/seed với PostgreSQL | [Chuẩn bị DB test riêng và chạy từng suite](docs/evidence/task-5.2.3-database.md) |
+| API bằng Postman/Newman | [Import Collection, cấu hình và chạy](docs/evidence/api-postman/README.md) |
+| E2E từ menu tới xác nhận đơn | [Phạm vi và cách chạy](docs/evidence/task-5.2.2-browser-e2e.md) |
+| Hiệu năng menu | [Cách chạy và kết quả local đã lưu](docs/evidence/repository-consistency.md#3-hiệu-năng-menu-local) |
+| Kết quả kiểm tra đã lưu | [Báo cáo ngày 15/11/2026](docs/evidence/repository-consistency.md) |
 
-```bash
-node scripts/check-foundation.mjs
-node scripts/check-foundation.mjs --dev
-```
+## CI/CD, triển khai và rollback
 
-Sau khi build, chạy bản production **local** trong hai terminal:
+CI kiểm tra lint, test, build và E2E trình duyệt. CD dùng lại bộ kiểm tra CI, chạy thêm kiểm tra vận hành DB, rồi build/push image theo SHA commit và deploy lên EC2. Sau deploy có kiểm tra HTTPS và health. Quy tắc chặn merge cần được cấu hình trên GitHub theo [quy trình nhóm](docs/planning/workflow.md).
 
-```bash
-npm --prefix apps/api run start:prod
-```
+- [Triển khai AWS, định tuyến, biến môi trường và CI/CD](docs/deployment.md).
+- [Backup, restore, migration và rollback](docs/database-backup-rollback.md). Rollback image không tự hoàn tác migration.
+- [Tạo tag và GitHub Release](docs/release/release-procedure.md).
 
-```bash
-npm --prefix apps/web start
-```
+## Tài liệu và minh chứng nộp bài
 
-Dùng Ctrl+C để dừng. Bản production local không phải triển khai AWS. Xem [nguồn kế thừa và minh chứng Task 4.1](docs/evidence/task-4.1-setup.md).
+Các liên kết dưới đây giúp đối chiếu yêu cầu, thiết kế, code và kết quả theo Task 1–5 của đề Assignment2-BrewLite-1.pdf (ver 1.0), đặc biệt mục 7.4, 8.1 và 9.1.
 
-## Giá và lựa chọn món — Task 5.1.1a (#21)
+| Nội dung | Tài liệu |
+|---|---|
+| Task 1 — Yêu cầu | [Bối cảnh/phạm vi](docs/requirements/context-and-scope.md), [SRS](docs/requirements/srs.md), [use-case đặt và thanh toán](docs/requirements/use-case-checkout.md) |
+| Task 2 — Mô hình hóa | [Activity, sequence và class diagram](docs/diagrams/README.md) |
+| Task 3 — Kiến trúc và triển khai | [Kiến trúc/ADR](docs/architecture/architecture.md), [deployment](docs/deployment.md) |
+| Task 4–5 — Phát triển và kiểm chứng | [Backlog](docs/planning/assignment-2-backlog.md), [quy trình làm việc](docs/planning/workflow.md), [ma trận FR/NFR](docs/traceability-matrix.md) |
+| Demo và bàn giao | [Kịch bản demo](docs/handover/demo-script.md), [phiếu người ngoài nhóm](docs/handover/outsider-verification.md) |
+| Tổng kết Sprint | [Sprint Review](docs/sprint/sprint-review.md), [Retrospective](docs/sprint/retrospective.md) |
+| Phiên bản và phần còn chờ | [Release notes](docs/release/release-notes-v1.0.0.md) |
 
-Kế thừa nguyên bản từ [BrewLite-SE tại `e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe`](https://github.com/NguyenKhanhHungDev/BrewLite-SE/tree/e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe): `apps/api/src/orders/orders.pricing.ts`, `order-preferences.ts`, `orders.contract.ts`, `dto/create-order.dto.ts` và `apps/web/lib/pricing.ts`, `preferences.ts`. Backend tính giá size S/M/L, topping, số ly từ giá công thức chính thức; kiểm tra đường/đá, ghi chú, tồn khả dụng và giới hạn số tiền. Web helper chỉ tính giá hiển thị theo cùng công thức SRS mục 7.
-
-Dependency đi kèm từ cùng SHA: `apps/api/src/orders/orders.service.ts`, `orders.ingredients.ts`, `order-state.ts`, `apps/api/src/promotions/promotions.service.ts` và test nguồn `orders.service.spec.ts`, `orders.ingredients.spec.ts`, `promotions.service.spec.ts`. Validation đầy đủ và tính thành tiền dòng/tổng đơn nằm trong `OrdersService.create`; không tách công thức hay thêm endpoint báo giá. Phát dùng service này khi tích hợp Orders; Huy dùng chung helper giá/khẩu vị và hàm `applyPromotion` khi tích hợp Promotions/Web. Việc chuyển dependency không đồng nghĩa nghiệm thu các issue của Orders/Promotions.
-
-Test bổ sung: `apps/api/src/orders/orders.pricing.spec.ts` và `apps/web/test/pricing-preferences.test.ts`, kiểm tra bảng giá, lựa chọn sai/trùng, số lượng, ghi chú 200/201 ký tự, khẩu vị legacy, giá âm/tràn số và làm tròn BREW10. Chạy riêng bằng `npm --prefix apps/api test -- src/orders src/promotions` và `npm --prefix apps/web test -- test/pricing-preferences.test.ts`.
-
-**Chưa nghiệm thu đầy đủ #21:** `AppModule` hiện chỉ đăng ký Products. Orders controller, provider `ORDERS_STORE`/Prisma adapter và Auth chưa được tích hợp; test service dùng store giả, chưa chứng minh `POST /orders` chạy với JWT/database thật hoặc giữ kho trong transaction. DTO/source không đặt trần 99 ly ở backend; trần 1–99 là yêu cầu giao diện FR-03 và cần kiểm chứng khi chuyển trang chi tiết món ở 5.1.1b. Giữ nguyên hành vi nguồn, chưa triển khai trang tùy chọn/giỏ hoặc kiểm thử toàn luồng đặt đơn.
-
-## CI cho pull request
-
-GitHub Actions chạy API/Web khi mở hoặc cập nhật PR vào `main`, push `main`; có thể chạy thủ công sau khi workflow có trên nhánh mặc định. Mỗi app chạy `npm ci` → lint → test → build; API sinh Prisma Client và chạy thêm HTTP test với mock, không cần DB thật.
-
-`PR quality gate` chỉ đạt khi cả `API checks` và `Web checks` đều đạt. Không bỏ qua lỗi hoặc job bị skip. Ruleset `require-ci` yêu cầu đúng check này từ GitHub Actions, không có bypass; giữ riêng ruleset quyền merge hiện có.
-
-Với ba nhánh đang phụ thuộc nhau, merge theo thứ tự menu #18 → kiểm thử #19 → CI #20 bằng **Merge pull request**. Ruleset CI được chuẩn bị và kiểm chứng nhưng để Disabled đến khi hai PR tiền đề đã merge, tránh chặn các nhánh chưa có workflow. Sau khi merge menu và kiểm thử, vào Settings → Rules → Rulesets → `require-ci`, chuyển **Active**, lưu; xác nhận PR CI có check xanh rồi mới merge. Chỉ nghiệm thu #20 khi CI đã merge và rule đang Active.
-
-Xem [minh chứng CI và lượt pass/fail](docs/evidence/task-4.4-ci.md). CI không triển khai EC2; CD sẽ được bổ sung riêng.
-
-## Chạy bằng Docker Compose và kiểm tra sức khỏe (Task 5.2.4)
-
-`compose.yaml` chạy đầy đủ 4 service: `db` (PostgreSQL 17, không publish cổng ra host), `migrate` (one-shot `prisma migrate deploy` + `prisma db seed` khi `RUN_SEED=true`), `api` (`127.0.0.1:3001`) và `web` (`127.0.0.1:3000`).
-
-```bash
-cp -n .env.example .env
-docker compose up -d --build --wait
-node scripts/check-compose.mjs
-```
-
-- Health API: `GET http://127.0.0.1:3001/health` (kiểm tra kết nối PostgreSQL qua `SELECT 1`; trả `200` `{ status: "ok", service: "api", database: "up" }` khi sẵn sàng hoặc `503` `{ status: "error", service: "api", database: "down" }` khi DB mất kết nối).
-- Health Web: `GET http://127.0.0.1:3000/api/health` (trả `200` `{ status: "ok", service: "web" }`; hỗ trợ `?deep=1` kiểm tra thêm API upstream).
-- Nếu cổng 3000/3001 đang bận trên máy local, chỉnh `WEB_PORT` và `API_PORT` trong `.env` (hoặc truyền biến môi trường) và truyền `--api-url` / `--web-url` cho `scripts/check-compose.mjs`.
-- Trong môi trường không muốn tự chạy seed demo, đặt `RUN_SEED=false`. Dừng container bằng `docker compose down` (giữ nguyên volume dữ liệu `brewlite_pg_data`). Xem [minh chứng Docker Compose và health check](docs/evidence/task-5.2.4-docker-compose.md).
-
-## Triển khai production lên AWS EC2 và CD bằng GitHub Actions (Task 5.3.1 & 5.4.1)
-
-Cấu hình production chạy trên Ubuntu Server (`linux/amd64`) dùng `compose.prod.yaml`, reverse proxy `deploy/caddy/Caddyfile` (TLS tự động cho domain DuckDNS), và workflow `.github/workflows/cd.yml` (chạy trên `push` vào `main` hoặc `workflow_dispatch`):
-
-- **Chất lượng & build image**: `cd.yml` chạy song song `quality-gate` (API/Web) và `db-operations-gate` (kiểm tra script DB #38, `compose config`, cú pháp bash), rồi build và push 3 image `linux/amd64` lên GHCR theo `${{ github.sha }}` với context `./apps/api` (`brewlite-api`, `brewlite-api-migrate`) và `./apps/web` (`brewlite-web`).
-- **Triển khai tích hợp #38**: `deploy/scripts/deploy.sh` khóa tiến trình bằng `flock`, kiểm tra biến môi trường `.env.prod`, xác nhận `db`/`api`/`web` không public port, sau đó gọi thẳng `scripts/db/migrate.mjs` (tạo backup `.dump` + `.sha256` tại `/srv/brewlite/backups` và chạy Prisma migration không seed), khởi động lại `api`/`web`/`caddy` bằng `--no-deps`, và chỉ ghi nhận `.current-release` (qua `mark-release.sh`) sau khi health/smoke ngoài Internet đạt. Rollback dùng `deploy/scripts/rollback.sh` gọi `scripts/db/rollback-app.mjs`.
-- **Kiểm tra sau deploy**: chạy `scripts/check-compose.mjs` qua `https://<APP_DOMAIN>` và kiểm tra cổng `5432` không truy cập được từ ngoài Internet.
-- **Secrets & thiết lập EC2**: sử dụng `.env.prod.example` làm mẫu cho `/opt/brewlite/.env.prod` trên EC2 (tự cấu hình mật khẩu DB, JWT/proxy secrets và thông số ZaloPay trên EC2, không commit lên Git) và cấu hình secrets trong GitHub (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `APP_DOMAIN`, tùy chọn `EC2_PORT`, `EC2_DEPLOY_PATH`). Chi tiết xem [tài liệu triển khai](docs/deployment.md) và [minh chứng Task 5.3.1 & 5.4.1](docs/evidence/task-5.3.1-5.4.1-deploy.md).
-
-## Rollback và khôi phục (tóm tắt)
-
-- **Rollback ứng dụng** (đưa `api`/`web` về image trước, không đổi DB): chạy trên EC2 trong `/opt/brewlite`, **sau khi** xác minh schema tương thích với code cũ. Script từ chối chạy nếu thiếu `--schema-compatible`.
-
-  ```bash
-  cd /opt/brewlite
-  bash deploy/scripts/rollback.sh --schema-compatible                 # về bản trong .previous-release
-  bash deploy/scripts/rollback.sh --schema-compatible <SHA_40_KY_TU>  # hoặc chỉ định commit SHA
-  ```
-
-  Script khóa bằng `flock`, đọc `.env.prod`, gọi `scripts/db/rollback-app.mjs`, kiểm tra health rồi cập nhật `.current-release`. Cần Node.js trên host EC2.
-- **Rollback image không hoàn tác migration.** Nếu cần phục hồi dữ liệu, dùng backup `.dump` trong `/srv/brewlite/backups` theo runbook thủ công trong [database-backup-rollback.md](docs/database-backup-rollback.md) (mục 7).
-- Không xóa volume `brewlite_pg_data`, không chạy seed trên production hiện có dữ liệu.
-
-## Phát hành và bàn giao (Task 5.4.2)
-
-Tag và GitHub Release theo [quy trình phát hành](docs/release/release-procedure.md); nội dung phát hành ở [release notes](docs/release/release-notes-v1.0.0.md). Hạn chế còn lại được ghi trong release notes, không giấu ở nơi khác.
+Xem [mục lục tài liệu](docs/README.md) để tìm thêm minh chứng. Những mục chưa có xác nhận hoặc chưa đủ bằng chứng vẫn được ghi rõ trong release notes và ma trận truy vết.

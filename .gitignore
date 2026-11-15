@@ -25,3 +25,7 @@ apps/web/test-results/
 
 # PostgreSQL archives/checksums are local operational data, never source code.
 /backups/
+
+# Local Postman exports and reports may contain passwords or session tokens.
+/output/postman/
+*.local.postman_environment.json

@@ -43,8 +43,8 @@ Trong NestJS, Controller/Guard nhận request và kiểm tra quyền; Service x�
 | Migration | Lưu schema/migration trong Git; kiểm tra trên DB test trước khi áp dụng. Local có seed demo; production không mặc định chạy seed demo. |
 | Cấu hình | `API_INTERNAL_URL` dùng lúc build rewrites và runtime BFF; `DATABASE_URL`, `PORT`, `APP_ORIGIN` cấp theo môi trường. |
 | Secret | JWT, mật khẩu DB, khóa ZaloPay và `BFF_PROXY_SECRET` không đưa vào repo/log; BFF secret khớp Web/API. |
-| Log và health | Container xuất stdout/stderr. Nguồn cũ probe Web qua `/`, API qua `/products`, DB qua `pg_isready`; health endpoint riêng cần bổ sung. |
-| PWA | Cần bổ sung manifest, khả năng cài đặt và xử lý mất mạng theo SRS; responsive không tự chứng minh đạt PWA. |
+| Log và health | API có `/health` kiểm tra DB; Web có `/api/health` và `?deep=1` kiểm tra upstream. PostgreSQL dùng `pg_isready`. Container xuất stdout/stderr; Compose production giới hạn log 10 MB × 3 file cho mỗi service. |
+| PWA | Đã có manifest, icon, service worker và trang offline; giữ giỏ và chặn thao tác ghi khi mất mạng. Test offline không thay thế kiểm tra cài/mở standalone trên thiết bị hỗ trợ qua HTTPS. |
 
 ## 5. Quyết định và trade-off
 
@@ -56,4 +56,4 @@ Trong NestJS, Controller/Guard nhận request và kiểm tra quyền; Service x�
 | ZaloPay Sandbox | Kế thừa thanh toán thử hiện có | Phụ thuộc gateway; cần kiểm chứng Ví/Thẻ mô phỏng theo đề | [004](adr/004-zalopay-sandbox.md) |
 | AWS EC2 và Compose | Tận dụng container hiện có | Nhóm tự vận hành, kiểm soát chi phí, backup và phục hồi | [005](adr/005-deployment-and-delivery.md) |
 
-Chi tiết môi trường triển khai: [Task 3.2](../deployment.md). PWA, health riêng và hạ tầng production là phần cần hiện thực, chưa phải kết quả nghiệm thu.
+Chi tiết môi trường triển khai: [Task 3.2](../deployment.md). Code PWA, health và cấu hình production đã có; kết quả chạy và phần còn chờ nghiệm thu nằm trong [ma trận truy vết](../traceability-matrix.md) và [báo cáo kiểm chứng](../evidence/repository-consistency.md).

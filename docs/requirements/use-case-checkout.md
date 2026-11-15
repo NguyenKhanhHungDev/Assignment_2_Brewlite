@@ -108,4 +108,4 @@ Nếu tạo đơn bị mất phản hồi, không mặc định thao tác thất
 
 Các liên kết trên là cơ sở xây dựng ca kiểm thử cho luồng đặt và thanh toán đơn hàng.
 
-Chi tiết API kế thừa và các lưu ý kỹ thuật: [Đối chiếu repo cũ — API checkout](legacy-repo-review.md#api-checkout-kế-thừa-và-phần-cần-hoàn-thiện).
+Thiết kế xử lý đặt đơn/thanh toán xem [kiến trúc](../architecture/architecture.md); code và test liên quan xem [ma trận truy vết](../traceability-matrix.md).
