@@ -14,36 +14,8 @@ concurrency:
 
 jobs:
   quality-gate:
-    name: Quality gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client and check API
-        working-directory: apps/api
-        env:
-          DATABASE_URL: postgresql://brewlite:brewlite@127.0.0.1:5432/brewlite?schema=public
-        run: |
-          npm run db:generate
-          npm run lint
-          npm run test -- --maxWorkers=1
-          npm run test:e2e -- --maxWorkers=1
-          npm run build
-
-      - name: Check Web
-        working-directory: apps/web
-        run: |
-          npm run lint
-          npm run test -- --maxWorkers=1
-          npm run build
+    name: CI before deploy
+    uses: ./.github/workflows/ci.yml
 
   db-operations-gate:
     name: DB operations and deploy script checks

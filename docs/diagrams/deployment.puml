@@ -9,66 +9,61 @@ skinparam artifactBackgroundColor white
 skinparam databaseBackgroundColor white
 skinparam cloudBackgroundColor white
 skinparam storageBackgroundColor white
-title BrewLite — Sơ đồ triển khai dự kiến trên AWS
+title BrewLite — Triển khai theo cấu hình repository (15/11/2026)
 
-node "Local — máy thành viên" as Local {
-  artifact "Docker Compose\ndb → migrate → api → web" as LocalApp
-}
-node "CI/CD — GitHub" as CI {
-  artifact "GitHub Actions\nLint → Test → Build → Image → Deploy" as Pipeline
-  database "Database test riêng" as TestDB
-  cloud "GHCR\nDocker image: tag SHA / phiên bản" as Registry
-}
-node "Thiết bị người dùng" as Client {
+node "Thiết bị khách" as Client {
   artifact "Trình duyệt / PWA" as Browser
 }
-cloud "Duck DNS\nSubdomain trỏ tới IP public" as DNS
-node "AWS — EC2 Ubuntu (production dự kiến)" as EC2 {
-  node "Docker Compose" as Compose {
-    node "Caddy\nHTTPS :443 / HTTP :80" as Caddy
-    node "Next.js Web + BFF\n:3000 nội bộ" as Web
-    node "NestJS API\n:3001 nội bộ\n/health cần bổ sung" as API
-    artifact "Job migration\nchạy trước cập nhật API" as Migrate
-    database "PostgreSQL\n:5432 nội bộ" as DB
-    storage "Volume dữ liệu" as Disk
+cloud "DuckDNS\nbrewlite-a2.duckdns.org" as DNS
+node "GitHub Actions" as CI {
+  artifact "CI dùng chung cho PR và CD\nAPI + Web + Browser E2E fixture" as Checks
+  artifact "Gate DB operations\nPostgreSQL test riêng" as DBChecks
+  artifact "Build / push image\nDeploy / smoke HTTPS" as Pipeline
+  Checks --> Pipeline : phải đạt
+  DBChecks --> Pipeline : phải đạt
+}
+cloud "GHCR\napi / api-migrate / web\ntag = commit SHA" as Registry
+
+node "AWS EC2 Ubuntu — /opt/brewlite" as EC2 {
+  node "Docker Compose production" as Compose {
+    node "Caddy\n80/TCP, 443/TCP + UDP\nTLS tự động" as Caddy
+    node "Next.js Web / BFF\n:3000 nội bộ\n/api/health (?deep=1)" as Web
+    node "NestJS API\n:3001 nội bộ\n/health kiểm tra DB" as API
+    artifact "Job migration\nkhông seed thường kỳ" as Migrate
+    database "PostgreSQL 17\n:5432 nội bộ\nkhông publish port" as DB
+    storage "Volume brewlite_pg_data" as Disk
   }
-  artifact "Cấu hình và secret runtime\nEC2: cấp qua môi trường Compose" as Config
-  artifact "Docker logs\nstdout/stderr; rotation cần cấu hình" as Logs
+  storage "/srv/brewlite/backups\n.dump + .sha256" as Backup
 }
 cloud "ZaloPay Sandbox" as ZP
-artifact "Bản sao lưu database\nvị trí cần xác định" as Backup
-Local -[hidden]right-> CI
-Pipeline --> TestDB : Kiểm thử
-Pipeline --> Registry : Push image
-Pipeline ..> EC2 : SSH :22; cập nhật Compose
-Pipeline ..> Caddy : HTTPS :443\nhealth / smoke sau deploy
-EC2 ..> Registry : Pull image
-Browser ..> DNS : Tra cứu DNS
-note right of DNS
-  Bản ghi trỏ tới IP public EC2.
-  DNS không chuyển tiếp HTTP.
-end note
+node "Local — compose.yaml" as Local {
+  artifact "DB → migrate/seed → API → Web\nAPI/Web chỉ bind loopback" as LocalApp
+}
+
+Browser ..> DNS
 Browser --> Caddy : HTTPS :443
-Caddy --> Web : HTTP :3000\nWeb / BFF
-Caddy --> API : HTTP :3001\nAPI public / health / callback
-Web --> API : HTTP :3001 nội bộ\nrewrites / BFF
-Migrate --> DB : Migration
-API --> DB : PostgreSQL :5432
-Config ..> Web : env
-Config ..> API : env / secret
-Config ..> Migrate : DATABASE_URL
-Caddy ..> Logs
-Web ..> Logs
-API ..> Logs
+Pipeline --> Registry : push 3 image
+Pipeline ..> EC2 : SSH deploy (:22 mặc định)
+Pipeline ..> Caddy : HTTPS smoke
+EC2 ..> Registry : pull đúng SHA
+Caddy --> Web : các route còn lại\nWeb / BFF / rewrites
+Caddy --> API : /health\n/payments/zalopay/callback
+Web --> API : HTTP nội bộ\nBFF / rewrites
+Migrate --> DB : migration trước cập nhật app
+API --> DB : SQL / transaction
 DB -- Disk
-DB ..> Backup : Sao lưu / khôi phục
-API --> ZP : HTTPS: tạo / hỏi kết quả
-ZP --> Caddy : Callback HTTPS
-Browser --> ZP : Thanh toán thử
+DB ..> Backup : backup trước migration
+API --> ZP : HTTPS tạo / query
+ZP --> Caddy : callback HTTPS
+Local -[hidden]right-> CI
+
 legend bottom
-  Hướng nền tảng đã chốt; tài nguyên và URL production chưa kiểm chứng.
-  CI giữ secret SSH/registry; runtime secret chỉ cấp cho dịch vụ cần dùng.
-  Các tuyến public/prefix cụ thể chờ cấu hình Caddy; không public cổng DB.
-  Health endpoint, log rotation và nơi lưu backup cần hiện thực.
+  .env.prod cấp secret cho đúng dịch vụ; không commit. Log Docker: 10 MB x 3 / service.
+  Khách tra cứu DuckDNS trước HTTPS, chuyển sang ZaloPay khi thanh toán thử.
+  Chỉ Caddy public port trên Compose production; DNS không chuyển tiếp HTTP.
+  CD mới gọi lại CI trong thay đổi local này; cần run GitHub sau khi push được duyệt.
+  CI/CD commit nền ab5f05f đã đạt; không thay cho nghiệm thu PWA / Sandbox đầy đủ.
+  Deploy: backup → migrate → cập nhật app → smoke HTTPS và kiểm tra cổng DB đóng.
+  Rollback image cần schema tương thích; không tự hoàn tác migration.
 endlegend
 @enduml

@@ -35,7 +35,7 @@ MVP tối thiểu theo đề gồm xem menu → chi tiết món/size/topping →
 | Phạm vi | Chức năng | Phạm vi bàn giao |
 | --- | --- | --- |
 | MVP bắt buộc | Menu, chi tiết, size/topping, giỏ, xác thực, đặt/thanh toán đơn, lịch sử và quản lý trạng thái | Bắt buộc trong phiên bản bàn giao. |
-| Mở rộng dự kiến kế thừa | Tìm kiếm/danh mục; khẩu vị/ghi chú; hồ sơ và người nhận; khuyến mãi/điểm; công thức, nguyên liệu và đối soát | Chuyển phần phù hợp SRS cùng dependency và test. Đối chiếu và xử lý các khác biệt trong [tài liệu kế thừa repo cũ](legacy-repo-review.md) trước khi nghiệm thu. |
+| Mở rộng dự kiến kế thừa | Tìm kiếm/danh mục; khẩu vị/ghi chú; hồ sơ và người nhận; khuyến mãi/điểm; công thức, nguyên liệu và đối soát | Chuyển phần phù hợp SRS cùng dependency và test. Kiểm tra theo SRS và [ma trận truy vết](../traceability-matrix.md) trước khi nghiệm thu. |
 | Mở rộng sau Ass2 | Giao hàng, nhiều chi nhánh, chương trình khuyến mãi tùy biến và đổi điểm | Không thuộc cam kết phiên bản này; xem mục 4. |
 
 Thanh toán thử nghiệm:  ZaloPay Sandbox 
@@ -57,7 +57,7 @@ Quy tắc chi tiết và tiêu chí chấp nhận được đặc tả trong [SR
 
 Repo mới dùng Next.js, NestJS và PostgreSQL; cần giao diện responsive/PWA, kiểm thử, Docker Compose, CI/CD và triển khai HTTPS theo đề. Nhóm ưu tiên làm giao diện máy tính trước; menu mobile-first vẫn cần đạt tại Task 4.3. PWA, health check, E2E, CI/CD và production chưa có minh chứng đầy đủ trong repo nguồn.
 
-Chi tiết tiêu chí chất lượng xem [SRS](srs.md); các phần kế thừa và còn thiếu xem [đối chiếu repo cũ](legacy-repo-review.md).
+Chi tiết tiêu chí chất lượng xem [SRS](srs.md); code, test và phần còn thiếu minh chứng xem [ma trận truy vết](../traceability-matrix.md).
 
 ## 4. Ngoài phạm vi
 

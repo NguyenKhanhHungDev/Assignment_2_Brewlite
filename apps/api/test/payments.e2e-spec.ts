@@ -1,8 +1,9 @@
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
+import { OrdersExpirationService } from '../src/orders/orders.expiration.service.js';
 import { AppModule } from '../src/app.module.js';
 import { AuthService } from '../src/auth/auth.service.js';
 import { PAYMENT_ORDERS_STORE } from '../src/payments/payments.contract.js';
@@ -23,8 +24,15 @@ describe('Payments HTTP (mocked repository & auth store, no database)', () => {
     paidAt: null,
   };
 
+  // Guard against accidental DB work while testing HTTP with fake stores.
+  const expireBatch = vi.spyOn(OrdersExpirationService.prototype, 'expireBatch')
+    .mockResolvedValue(0);
+
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
+      // These suites exercise HTTP handlers; background DB jobs belong to integration tests.
+      .overrideProvider(OrdersExpirationService)
+      .useValue({})
       .overrideProvider(RecipesPrismaAdapter)
       .useValue({ findAll: async () => [], findById: async () => null })
       .overrideProvider(AuthService)
@@ -95,7 +103,11 @@ describe('Payments HTTP (mocked repository & auth store, no database)', () => {
   });
 
   afterAll(async () => {
-    await app?.close();
+    await app?.close(); expireBatch.mockRestore();
+  });
+
+  it('does not start the database-backed expiration job', () => {
+    expect(expireBatch).not.toHaveBeenCalled();
   });
 
   it('requires authentication on customer and admin payment endpoints', async () => {

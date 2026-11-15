@@ -171,4 +171,4 @@ Trạng thái giao dịch thanh toán được lưu riêng với trạng thái �
 
 Không đồng nhất giao dịch SUCCESS với trạng thái đơn PAID trong mọi trường hợp; giao dịch cần đối soát không tự chuyển đơn đã hủy thành PAID. Đồng hồ trên giao diện không quyết định trạng thái giao dịch.
 
-Chi tiết hiện trạng và phần cần bổ sung từ repo cũ: [Đối chiếu repo kế thừa](legacy-repo-review.md).
+Code, test và phần còn thiếu minh chứng của từng yêu cầu: [ma trận truy vết](../traceability-matrix.md).

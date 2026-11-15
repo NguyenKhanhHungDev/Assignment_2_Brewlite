@@ -9,12 +9,19 @@
 | Task 3.1 — Kiến trúc | [Kiến trúc](architecture/architecture.md), các ADR được liên kết trong tài liệu | [PR #4](https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite/pull/4) |
 | Task 3.2 — Triển khai | [Thiết kế triển khai](deployment.md), [nguồn sơ đồ](diagrams/deployment.puml), [ảnh sơ đồ](diagrams/deployment.png) | [PR #4](https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite/pull/4) |
 
-PR ghi lịch sử thay đổi, không thay thế bằng chứng nghiệm thu. Task 3.2 hiện là thiết kế; tài nguyên, URL và kiểm chứng AWS thực tế sẽ bổ sung khi triển khai.
+PR ghi lịch sử thay đổi, không thay thế bằng chứng nghiệm thu. Task 3.2 đã được cập nhật theo Compose/Caddy/CD trong repo; xem [minh chứng triển khai](evidence/task-5.3.1-5.4.1-deploy.md) và [kết quả kiểm chứng mới](evidence/repository-consistency.md). Có sơ đồ và run thành công không thay thế nghiệm thu tất cả AC.
+
+## Nên xem ở đâu?
+
+- Chạy ứng dụng: [README gốc](../README.md).
+- Kiểm tra yêu cầu đã có code/test gì: [ma trận FR/NFR](traceability-matrix.md).
+- Chạy API test: [hướng dẫn Postman](evidence/api-postman/README.md).
+- Xem kết quả kiểm tra gần nhất đã lưu: [báo cáo ngày 15/11](evidence/repository-consistency.md).
+- Chuẩn bị nộp bài: [release notes và phần còn chờ](release/release-notes-v1.0.0.md).
 
 ## Tài liệu hỗ trợ
 
-- [Đối chiếu code repo cũ](requirements/legacy-repo-review.md): phần kế thừa và khác biệt cần xử lý.
-- [Backlog hai Sprint](planning/assignment-2-backlog.md), [hướng dẫn hoàn thành repo](planning/repository-guide.md), [quy trình làm việc](planning/workflow.md).
+- [Backlog hai Sprint](planning/assignment-2-backlog.md) và [quy trình làm việc](planning/workflow.md).
 - [Ma trận truy vết](traceability-matrix.md): cập nhật code/test và kết quả thật theo tiến độ; chưa điền đủ không được coi là hoàn tất truy vết.
 - [Cài đặt, chạy và kiểm tra local](../README.md), [minh chứng nền Task 4.1](evidence/task-4.1-setup.md).
 - [Minh chứng CI Task 4.4](evidence/task-4.4-ci.md).

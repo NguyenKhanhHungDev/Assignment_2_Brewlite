@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-15T10:43:02.855Z",
+  "baseUrl": "http://127.0.0.1:3001",
+  "settings": {
+    "warmup": 10,
+    "requests": 100,
+    "concurrency": 5,
+    "timeoutMs": 5000
+  },
+  "environment": {
+    "node": "v24.21.0",
+    "os": "linux 6.18.60-1-lts",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12450H",
+    "logicalCpus": 12,
+    "ramGiB": 15
+  },
+  "dataset": {
+    "menuItems": 10,
+    "detailId": 1,
+    "note": "Dữ liệu hiện có của stack local; người chạy xác nhận nguồn seed và image/commit trong báo cáo."
+  },
+  "endpoints": [
+    {
+      "path": "/products",
+      "warmup": 10,
+      "requests": 100,
+      "successes": 100,
+      "failures": 0,
+      "p95Ms": 8.98612700000001,
+      "passed": true
+    },
+    {
+      "path": "/products/1",
+      "warmup": 10,
+      "requests": 100,
+      "successes": 100,
+      "failures": 0,
+      "p95Ms": 6.220254000000011,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

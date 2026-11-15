@@ -10,13 +10,8 @@ Tài liệu này điều chỉnh đề xuất ban đầu thành 35 issue theo SR
 - Đề yêu cầu ba tạo phẩm Task 1–3 và truy vết; có thể tổ chức repo sớm để lưu lịch sử nhưng không coi các task này đã nghiệm thu chỉ vì file đã tồn tại.
 - Khi tạo issue thật, thêm liên kết tài liệu, PR, test, log hoặc minh chứng tương ứng. Chỉ chuyển Done khi tiêu chí được kiểm tra và có bằng chứng.
 
-## Cách kế thừa code cũ
 
-**Nguồn kế thừa:** trước khi bắt đầu mỗi issue, kiểm tra `main` mới nhất của BrewLite-SE và ghi commit SHA vào PR/minh chứng. Lấy đúng code hiện hành của phần việc đó, kèm dependency, cấu hình, schema/migration và test liên quan. Không quay về commit khởi tạo hoặc bản cũ chỉ để đơn giản hóa. Cố định SHA trong lúc thực hiện issue để tái lập kết quả; nếu nguồn thay đổi, review chênh lệch trước khi cập nhật. Chỉ viết mới phần còn thiếu theo Assignment 2.
-
-Đã đối chiếu tĩnh BrewLite-SE tại commit `e876f258a1e8cac578b1c8f53ad7a58bab0eb7fe`; nội dung cây Git giống commit `d15283a9d8b307c0af42642279ae6158c92e2864` đang được tài liệu dẫn chiếu. Đây không phải kết quả chạy build/test.
-
-Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hướng **chuyển code và dependency cần thiết → điều chỉnh theo SRS → kiểm thử trên repo mới**. Chỉ viết mới phần còn thiếu hoặc chưa đáp ứng tiêu chí; không mặc định viết lại Auth, Orders, Inventory, Payment hoặc Loyalty. Xem [đối chiếu repo cũ](../requirements/legacy-repo-review.md).
+Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hướng **chuyển code và dependency cần thiết → điều chỉnh theo SRS → kiểm thử trên repo mới**. Chỉ viết mới phần còn thiếu hoặc chưa đáp ứng tiêu chí; không mặc định viết lại Auth, Orders, Inventory, Payment hoặc Loyalty. Đối chiếu yêu cầu, code và test tại [ma trận truy vết](../traceability-matrix.md).
 
 ## Task 1 — Yêu cầu
 
@@ -24,15 +19,15 @@ Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hư
 | --- | --- | --- | --- | --- |
 | 1.1 | Context và phạm vi | Hưng | Có stakeholder, MVP/mở rộng/ngoài phạm vi, giả định, ràng buộc và rủi ro theo đề | Đề bài |
 | 1.2 | SRS và use-case tổng quát | Hưng | Có FR/NFR, MoSCoW, tiêu chí kiểm tra được và sơ đồ tổng quát; thống nhất với 1.1 | 1.1 |
-| 1.3 | Đặc tả use-case Đặt và thanh toán đơn hàng | Phát (chủ trì), Thắng (phối hợp) | Có một đặc tả và sơ đồ cho toàn luồng; ghi actor, trigger, điều kiện trước/sau, luồng chính/thay thế/ngoại lệ và liên kết FR. Phân biệt tạo đơn với thanh toán; Phát review đặt đơn, Thắng review thanh toán | 1.2 |
+| 1.3 | Đặc tả use-case Đặt và thanh toán đơn hàng | Hưng | Có một đặc tả và sơ đồ cho toàn luồng; ghi actor, trigger, điều kiện trước/sau, luồng chính/thay thế/ngoại lệ và liên kết FR. Phân biệt tạo đơn với thanh toán; Phát review đặt đơn, Thắng review thanh toán | 1.2 |
 
 ## Task 2 — Mô hình hóa
 
 | ID | Issue | Owner đề xuất | Điều kiện hoàn thành | Phụ thuộc |
 | --- | --- | --- | --- | --- |
-| 2.1 | Activity checkout | Huy | Có bắt đầu/kết thúc, swimlane, nhánh chưa đăng nhập, hết hàng và thanh toán thất bại; lưu PUML và PNG | 1.3 |
-| 2.2 | Sequence Đặt và thanh toán đơn hàng | Phát | Có một sơ đồ liên tục, đủ lifeline, JWT, validation, transaction, chống trùng và nhánh thanh toán; lưu PUML và PNG. Phát review tạo đơn, Thắng review thanh toán | 1.3, 2.1 |
-| 2.3 | Class domain | Khoa | Có bảy lớp tối thiểu theo đề, quan hệ, multiplicity, enum; phân biệt lớp domain với bảng hiện có; lưu PUML và PNG | 1.2, 1.3 |
+| 2.1 | Activity checkout | Khoa | Có bắt đầu/kết thúc, swimlane, nhánh chưa đăng nhập, hết hàng và thanh toán thất bại; lưu PUML và PNG | 1.3 |
+| 2.2 | Sequence Đặt và thanh toán đơn hàng | Huy | Có một sơ đồ liên tục, đủ lifeline, JWT, validation, transaction, chống trùng và nhánh thanh toán; lưu PUML và PNG. Phát review tạo đơn, Thắng review thanh toán | 1.3, 2.1 |
+| 2.3 | Class domain | Phát | Có bảy lớp tối thiểu theo đề, quan hệ, multiplicity, enum; phân biệt lớp domain với bảng hiện có; lưu PUML và PNG | 1.2, 1.3 |
 
 ## Task 3 — Kiến trúc
 
@@ -49,7 +44,7 @@ Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hư
 | 4.3.1 | Products API: danh sách và chi tiết | Hưng | Kế thừa Products/RecipeMenu và dependency liên quan; chuẩn bị Prisma client, schema/migration và seed cần cho menu trên DB local/test ngay Sprint 1, phối hợp Khoa; hai API `GET /products`, `GET /products/:id` chạy được, có validation/lỗi và unit test | 4.1; dữ liệu mẫu/schema menu |
 | 4.3.2 | Giao diện menu | Huy | Menu gọi API, có loading/empty/error; đáp ứng **mobile-first** tại nghiệm thu Task 4.3; có thể làm giao diện desktop trước | 4.3.1 hoặc hợp đồng API ổn định |
 | 4.3.3 | Kiểm thử API và menu | Khoa | Kế thừa test API phù hợp; thiết lập công cụ và script kiểm thử frontend vì Web nguồn chưa có script `test`; có test component/luồng menu chạy bằng lệnh được ghi lại, kèm kết quả trên repo mới | 4.3.1, 4.3.2 |
-| 4.4 | CI cho pull request | Thắng | PR chạy install → lint → unit test → build; chặn merge khi check bắt buộc lỗi; có minh chứng một lần pass và một lần phát hiện lỗi | 4.1; lệnh kiểm tra của Web/API |
+| 4.4 | CI cho pull request | Hưng | PR chạy install → lint → unit test → build; chặn merge khi check bắt buộc lỗi; có minh chứng một lần pass và một lần phát hiện lỗi | 4.1; lệnh kiểm tra của Web/API |
 
 ## Sprint 2 — Chức năng
 
@@ -69,10 +64,10 @@ Các đầu việc chức năng ở Sprint 1–2 được thực hiện theo hư
 
 | ID | Issue | Owner đề xuất | Điều kiện hoàn thành | Phụ thuộc |
 | --- | --- | --- | --- | --- |
-| 5.2.1.1 | Integration test Orders | Huy | Kiểm thử tạo đơn, quyền, chống trùng và cạnh tranh giữ kho; ghi kết quả | 5.1.4, 5.1.6 |
+| 5.2.1.1 | Integration test Orders | Phát | Kiểm thử tạo đơn, quyền, chống trùng và cạnh tranh giữ kho; ghi kết quả | 5.1.4, 5.1.6 |
 | 5.2.1.2 | Integration test Payment | Phát | Kiểm thử callback/query lặp, thành công/thất bại/chưa rõ và đối soát; ghi kết quả | 5.1.4, 5.1.5 |
 | 5.2.1.3 | Integration test Inventory | Phát | Kiểm thử cạnh tranh, giữ/trả kho, kiểm kho và chống trùng; ghi kết quả | 5.1.4, 5.1.6 |
-| 5.2.1.4 | Integration test Auth và Loyalty | Hưng | Kiểm thử phiên/quyền và cộng điểm một lần; người kiểm thử khác owner Auth và Loyalty theo phương án hiện tại | 5.1.3, 5.1.8 |
+| 5.2.1.4 | Integration test Auth và Loyalty | Phát | Kiểm thử phiên/quyền và cộng điểm một lần; người kiểm thử khác owner Auth và Loyalty theo phương án hiện tại | 5.1.3, 5.1.8 |
 | 5.2.2 | E2E trình duyệt | Huy | Ít nhất một bài chạy từ menu đến xác nhận đơn; ghi môi trường, kết quả và bằng chứng | 5.1.2–5.1.8; môi trường test |
 | 5.2.3 | Schema, migration và seed | Khoa | Kế thừa nền menu đã chuẩn bị ở 4.3.1; chốt phần schema/hợp đồng còn lại đầu Sprint 2; migration/seed tái tạo DB test rỗng, cập nhật theo thay đổi và kiểm chứng lại khi tích hợp xong | Task 2–3, 4.3.1; hợp đồng module |
 | 5.2.4 | Docker Compose và health | Thắng | Compose chạy Web/API/PostgreSQL local; migration/seed phù hợp; có `GET /health` và kiểm tra khởi động | 4.1, 5.2.3; Web/API đã tích hợp |

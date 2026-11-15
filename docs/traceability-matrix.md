@@ -1,73 +1,65 @@
 # Ma trận truy vết yêu cầu
 
-## Căn cứ và trạng thái
+Cập nhật ngày **15/11/2026**, đối chiếu code từ commit nền `ab5f05f8aa1e13791c9cb788909b58332712adac` và thay đổi local trong lần sửa này.
 
-Theo mục 8.1 của đề Assignment 2, ma trận liên kết mã yêu cầu với use-case/user story, thiết kế/sơ đồ, code/API và test.
+## Cách đọc
 
-- Mã FR/NFR và ánh xạ use-case lấy từ [SRS](requirements/srs.md), đặc biệt mục 5.
-- Luồng UC-05, UC-06 và UC-07 được đặc tả trong [use-case đặt và thanh toán](requirements/use-case-checkout.md).
-- Đây là bản khởi đầu ở giai đoạn Task 1. Các tài liệu thiết kế Task 2–3 đang có ở local chưa được review trong ma trận này; vì vậy cột thiết kế ghi “Chưa đối chiếu”.
-- Chưa có mã ứng dụng và kiểm thử trong repo hiện tại. Không dùng code hoặc kết quả của repo cũ làm bằng chứng hoàn thành repo mới.
-- Có hàng trong ma trận không đồng nghĩa yêu cầu đã được triển khai hoặc nghiệm thu.
+- Mã yêu cầu và tiêu chí chấp nhận (AC) theo [SRS](requirements/srs.md); luồng trọng tâm theo [use-case checkout](requirements/use-case-checkout.md).
+- **Có code/test** nghĩa là đã tìm thấy và đối chiếu file; không đồng nghĩa mọi AC đã đạt. Cột cuối ghi phần đã có và phần cần kiểm tra thêm.
+- Kết quả chạy mới, phạm vi DB bị skip và link CI/CD nằm trong [báo cáo kiểm chứng](evidence/repository-consistency.md). Kết quả DB trước đây ở [5.2.3](evidence/task-5.2.3-database.md).
+- Đây là truy vết để review, không phải biên bản nghiệm thu hay quyết định đóng issue. Không có tỷ lệ hoàn thành suy từ số hàng.
 
 ## Yêu cầu chức năng
 
-| Mã yêu cầu | Use-case/User Story | Thiết kế/Sơ đồ | Code/API | Test |
-| --- | --- | --- | --- | --- |
-| FR-01 | UC-01 Xem và tìm món | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-02 | UC-01 Xem và tìm món | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-03 | UC-02 Chọn tùy chọn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-04 | UC-02 Chọn tùy chọn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-05 | UC-03 Quản lý tài khoản | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-06 | UC-03 Quản lý tài khoản | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-07 | UC-03 Quản lý tài khoản | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-08 | UC-03 Quản lý tài khoản | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-09 | UC-03 Quản lý tài khoản | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-10 | UC-04 Quản lý giỏ | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-11 | UC-04 Quản lý giỏ | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-12 | UC-05 Đặt đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-13 | UC-05 Đặt đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-14 | UC-05 Đặt đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-15 | UC-05 Đặt đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-16 | UC-06 Thanh toán | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-17 | UC-06 Thanh toán | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-18 | UC-07 Xem giao dịch | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-19 | UC-06 Thanh toán | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-20 | UC-06 Thanh toán | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-21 | UC-08 Xem điểm và hạng thành viên | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-22 | UC-09 Theo dõi đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-23 | UC-09 Theo dõi đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-24 | UC-10 Quản lý đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-25 | UC-10 Quản lý đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-26 | UC-11 Quản lý giao dịch | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-27 | UC-12 Quản lý món | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-28 | UC-13 Quản lý nguyên liệu | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-29 | UC-10 Quản lý đơn | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-30 | UC-11 Quản lý giao dịch | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| FR-31 | UC-10, UC-11, UC-12, UC-13: Công cụ Admin | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
+| FR | Use-case | Thiết kế tham chiếu | Code chính | Test liên quan | Mức kiểm chứng / còn thiếu |
+|---|---|---|---|---|---|
+| FR-01 | UC-01 | [Use-case](diagrams/use-case-overview.puml) | [recipe-menu.service.ts](../apps/api/src/products/recipe-menu.service.ts) · [MenuCatalog.tsx](../apps/web/components/MenuCatalog.tsx) | [recipe-menu.service.spec.ts](../apps/api/src/products/recipe-menu.service.spec.ts) · [menu-catalog.test.tsx](../apps/web/test/menu-catalog.test.tsx) | Có unit/component và minh chứng menu. |
+| FR-02 | UC-01 | [Use-case](diagrams/use-case-overview.puml) | [menu.ts](../apps/web/lib/menu.ts) · [MenuCatalog.tsx](../apps/web/components/MenuCatalog.tsx) | [menu-catalog.test.tsx](../apps/web/test/menu-catalog.test.tsx) | Có test tìm/lọc; xem minh chứng menu. |
+| FR-03 | UC-02 | [Class](diagrams/class-domain.puml) | [ProductDetail.tsx](../apps/web/components/ProductDetail.tsx) · [orders.pricing.ts](../apps/api/src/orders/orders.pricing.ts) | [product-detail-contract.test.ts](../apps/web/test/product-detail-contract.test.ts) · [orders.pricing.spec.ts](../apps/api/src/orders/orders.pricing.spec.ts) | Test helper/contract; cần nghiệm thu đầy đủ thao tác UI và tồn theo size. |
+| FR-04 | UC-02 | [Sequence](diagrams/sequence-checkout.puml) | [preferences.ts](../apps/web/lib/preferences.ts) · [order-preferences.ts](../apps/api/src/orders/order-preferences.ts) | [cart-checkout-contract.test.ts](../apps/web/test/cart-checkout-contract.test.ts) · [orders.pricing.spec.ts](../apps/api/src/orders/orders.pricing.spec.ts) | Có test lựa chọn; cần đối chiếu lưu/hiển thị qua toàn luồng. |
+| FR-05 | UC-03 | [Use-case](diagrams/use-case-overview.puml) | [auth.service.ts](../apps/api/src/auth/auth.service.ts) · [AuthForm.tsx](../apps/web/components/AuthForm.tsx) | [auth.controller.spec.ts](../apps/api/src/auth/auth.controller.spec.ts) | Có test API; form và quy tắc mật khẩu cần đối chiếu từng AC. |
+| FR-06 | UC-03 | [Use-case](diagrams/use-case-overview.puml) | [auth.service.ts](../apps/api/src/auth/auth.service.ts) · [PasswordField.tsx](../apps/web/components/PasswordField.tsx) | [auth.controller.spec.ts](../apps/api/src/auth/auth.controller.spec.ts) | Có test đăng nhập; chưa có test riêng nút hiện/ẩn mật khẩu. |
+| FR-07 | UC-03 | [Use-case](diagrams/use-case-overview.puml) | [AuthProvider.tsx](../apps/web/components/AuthProvider.tsx) · [auth.service.ts](../apps/api/src/auth/auth.service.ts) | [jwt-auth.guard.spec.ts](../apps/api/src/auth/jwt-auth.guard.spec.ts) · [pwa-checkout.test.tsx](../apps/web/test/pwa-checkout.test.tsx) | Bao phủ một phần phiên/giỏ; cần nghiệm thu logout và hết phiên toàn luồng. |
+| FR-08 | UC-03 | [Use-case](diagrams/use-case-overview.puml) | [auth.service.ts](../apps/api/src/auth/auth.service.ts) · [ChangePassword.tsx](../apps/web/components/ChangePassword.tsx) | [account.spec.ts](../apps/api/src/auth/account.spec.ts) · [jwt-auth.guard.spec.ts](../apps/api/src/auth/jwt-auth.guard.spec.ts) | Có test đổi mật khẩu, cạnh tranh và phiên; UI cần kiểm tra riêng. |
+| FR-09 | UC-03 | [Use-case](diagrams/use-case-overview.puml) | [auth.controller.ts](../apps/api/src/auth/auth.controller.ts) · [AccountProfile.tsx](../apps/web/components/AccountProfile.tsx) | [account.spec.ts](../apps/api/src/auth/account.spec.ts) | Có test hồ sơ API; cần nghiệm thu lưu và mở lại trên UI. |
+| FR-10 | UC-04 | [Class](diagrams/class-domain.puml) | [CartProvider.tsx](../apps/web/components/CartProvider.tsx) · [cart.ts](../apps/web/lib/cart.ts) | [cart-checkout-contract.test.ts](../apps/web/test/cart-checkout-contract.test.ts) | Có test hợp đồng giỏ; tải lại được kiểm tra một phần ở PWA. |
+| FR-11 | UC-04 | [Use-case](diagrams/use-case-overview.puml) | [page.tsx](../apps/web/app/cart/page.tsx) | [pwa-checkout.test.tsx](../apps/web/test/pwa-checkout.test.tsx) | Cần kiểm tra riêng đồng ý/hủy và bàn phím cho hộp xóa giỏ. |
+| FR-12 | UC-05 | [Sequence](diagrams/sequence-checkout.puml) | [orders.service.ts](../apps/api/src/orders/orders.service.ts) · [CheckoutProvider.tsx](../apps/web/components/CheckoutProvider.tsx) | [orders.service.spec.ts](../apps/api/src/orders/orders.service.spec.ts) · [cart-checkout-contract.test.ts](../apps/web/test/cart-checkout-contract.test.ts) | Có test người nhận; đối chiếu bản nháp cũ và cùng tài khoản khi nghiệm thu. |
+| FR-13 | UC-05 | [Sequence](diagrams/sequence-checkout.puml) | [promotions.service.ts](../apps/api/src/promotions/promotions.service.ts) · [promotion.ts](../apps/web/lib/promotion.ts) | [promotions.service.spec.ts](../apps/api/src/promotions/promotions.service.spec.ts) · [promotions-admin-contract.test.ts](../apps/web/test/promotions-admin-contract.test.ts) | Có test chuẩn hóa mã và tính giảm giá. |
+| FR-14 | UC-05 | [Sequence](diagrams/sequence-checkout.puml) | [orders.service.ts](../apps/api/src/orders/orders.service.ts) · [orders.prisma-adapter.ts](../apps/api/src/orders/orders.prisma-adapter.ts) | [orders.integration.spec.ts](../apps/api/src/orders/orders.integration.spec.ts) · [orders-business.integration.spec.ts](../apps/api/src/orders/orders-business.integration.spec.ts) | Có integration DB; không tính suite skip là đạt. |
+| FR-15 | UC-05 | [Sequence](diagrams/sequence-checkout.puml) | [orders.prisma-adapter.ts](../apps/api/src/orders/orders.prisma-adapter.ts) | [orders.integration.spec.ts](../apps/api/src/orders/orders.integration.spec.ts) · [orders.service.spec.ts](../apps/api/src/orders/orders.service.spec.ts) | Có test gửi lặp/cạnh tranh; cần đối chiếu thêm ngoại lệ hash legacy. |
+| FR-16 | UC-06 | [Sequence](diagrams/sequence-checkout.puml) | [payments.service.ts](../apps/api/src/payments/payments.service.ts) · [payments.prisma-adapter.ts](../apps/api/src/payments/payments.prisma-adapter.ts) | [payments.integration.spec.ts](../apps/api/src/payments/payments.integration.spec.ts) · [zalopay.service.spec.ts](../apps/api/src/payments/zalopay.service.spec.ts) | Có test service/DB với gateway kiểm soát; Sandbox production chưa có minh chứng giao dịch đầy đủ. |
+| FR-17 | UC-06 | [Sequence](diagrams/sequence-checkout.puml) | [zalopay-reconciliation.ts](../apps/api/src/payments/zalopay-reconciliation.ts) · [payments.service.ts](../apps/api/src/payments/payments.service.ts) | [payments.safety.spec.ts](../apps/api/src/payments/payments.safety.spec.ts) · [payments.integration.spec.ts](../apps/api/src/payments/payments.integration.spec.ts) | Có test xử lý lặp và kết quả chưa rõ. |
+| FR-18 | UC-07 | [Sequence](diagrams/sequence-checkout.puml) | [payment-details.service.ts](../apps/api/src/payments/payment-details.service.ts) · [PaymentResult.tsx](../apps/web/components/PaymentResult.tsx) | [payment-details.spec.ts](../apps/api/src/payments/payment-details.spec.ts) · [payments-contract.test.tsx](../apps/web/test/payments-contract.test.tsx) | Có test dữ liệu/contract; cần nghiệm thu đầy đủ giao diện nhiều lần thử. |
+| FR-19 | UC-06 | [Sequence](diagrams/sequence-checkout.puml) | [PaymentCountdown.tsx](../apps/web/components/PaymentCountdown.tsx) · [payment-details.service.ts](../apps/api/src/payments/payment-details.service.ts) | [payments-contract.test.tsx](../apps/web/test/payments-contract.test.tsx) | Có test đồng hồ; cần kiểm tra tải lại và lấy lại trạng thái khi hết giờ. |
+| FR-20 | UC-06 | [Sequence](diagrams/sequence-checkout.puml) | [orders.expiration.service.ts](../apps/api/src/orders/orders.expiration.service.ts) · [zalopay-reconciliation.ts](../apps/api/src/payments/zalopay-reconciliation.ts) | [orders.expiration.service.spec.ts](../apps/api/src/orders/orders.expiration.service.spec.ts) · [payments.integration.spec.ts](../apps/api/src/payments/payments.integration.spec.ts) | Có test hết hạn và kết quả muộn; suite DB cần chạy riêng. |
+| FR-21 | UC-08 | [Class](diagrams/class-domain.puml) | [loyalty.service.ts](../apps/api/src/loyalty/loyalty.service.ts) · [LoyaltyBalance.tsx](../apps/web/components/LoyaltyBalance.tsx) | [loyalty.service.spec.ts](../apps/api/src/loyalty/loyalty.service.spec.ts) · [payments.integration.spec.ts](../apps/api/src/payments/payments.integration.spec.ts) | Có test cộng điểm; thiếu test UI mốc 99/100, 299/300 và tải lỗi. |
+| FR-22 | UC-09 | [Class](diagrams/class-domain.puml) | [orders-history.service.ts](../apps/api/src/orders/orders-history.service.ts) · [OrdersView.tsx](../apps/web/components/OrdersView.tsx) | [orders-history.service.spec.ts](../apps/api/src/orders/orders-history.service.spec.ts) · [cart-checkout-contract.test.ts](../apps/web/test/cart-checkout-contract.test.ts) | Có test lịch sử/snapshot; cần nghiệm thu UI theo từng AC. |
+| FR-23 | UC-09 | [Sequence](diagrams/sequence-checkout.puml) | [OrderTimeline.tsx](../apps/web/components/OrderTimeline.tsx) · [OrdersView.tsx](../apps/web/components/OrdersView.tsx) | [pwa-checkout.test.tsx](../apps/web/test/pwa-checkout.test.tsx) | Test hiện có bao phủ một phần; cần kiểm tra polling, dừng và lỗi mạng ở chi tiết đơn. |
+| FR-24 | UC-10 | [Use-case](diagrams/use-case-overview.puml) | [admin-orders.controller.ts](../apps/api/src/orders/admin-orders.controller.ts) · [OrdersManager.tsx](../apps/web/components/admin/orders/OrdersManager.tsx) | [admin-operations.integration.spec.ts](../apps/api/src/orders/admin-operations.integration.spec.ts) · [admin-orders.test.tsx](../apps/web/test/admin-orders.test.tsx) | Có test phân quyền, lọc/phân trang và ranh giới ngày Việt Nam. |
+| FR-25 | UC-10 | [Sequence](diagrams/sequence-checkout.puml) | [order-state.service.ts](../apps/api/src/orders/order-state.service.ts) · [order-state.prisma-adapter.ts](../apps/api/src/orders/order-state.prisma-adapter.ts) | [order-state.spec.ts](../apps/api/src/orders/order-state.spec.ts) · [orders-business.integration.spec.ts](../apps/api/src/orders/orders-business.integration.spec.ts) | Có test chuyển trạng thái/cạnh tranh; không cho Admin ép PAID. |
+| FR-26 | UC-11 | [Use-case](diagrams/use-case-overview.puml) | [payment-operations.controller.ts](../apps/api/src/payments/payment-operations.controller.ts) · [PaymentsManager.tsx](../apps/web/components/admin/payments/PaymentsManager.tsx) | [admin-operations.integration.spec.ts](../apps/api/src/orders/admin-operations.integration.spec.ts) · [payments.e2e-spec.ts](../apps/api/test/payments.e2e-spec.ts) | Có test HTTP/DB; giao diện đối soát cần nghiệm thu riêng. |
+| FR-27 | UC-12 | [Class](diagrams/class-domain.puml) | [recipes.service.ts](../apps/api/src/recipes/recipes.service.ts) · [RecipeManager.tsx](../apps/web/components/admin/recipes/RecipeManager.tsx) | [recipes.service.spec.ts](../apps/api/src/recipes/recipes.service.spec.ts) · [promotions-admin-contract.test.ts](../apps/web/test/promotions-admin-contract.test.ts) | Có service/contract; chưa chứng minh toàn bộ CRUD UI bằng E2E. |
+| FR-28 | UC-13 | [Class](diagrams/class-domain.puml) | [ingredients.service.ts](../apps/api/src/ingredients/ingredients.service.ts) · [IngredientsManager.tsx](../apps/web/components/admin/ingredients/IngredientsManager.tsx) | [ingredients.integration.spec.ts](../apps/api/src/ingredients/ingredients.integration.spec.ts) · [admin-inventory.test.tsx](../apps/web/test/admin-inventory.test.tsx) | Có test kho, phiên bản, chống trùng, audit và giao diện. |
+| FR-29 | UC-10 | [Sequence](diagrams/sequence-checkout.puml) | [order-cancellation.service.ts](../apps/api/src/orders/order-cancellation.service.ts) · [OrderDetailDialog.tsx](../apps/web/components/admin/orders/OrderDetailDialog.tsx) | [admin-operations.integration.spec.ts](../apps/api/src/orders/admin-operations.integration.spec.ts) · [admin-orders.test.tsx](../apps/web/test/admin-orders.test.tsx) | Đã sửa lỗi hủy sau UNKNOWN/CREATING → FAILED/CANCELLED; suite Admin 11/11 đạt trên PostgreSQL test riêng, gồm audit và không trả kho lặp; xem [minh chứng](evidence/repository-consistency.md#5-sửa-lỗi-hủy-đơn-sau-timeout-thanh-toán). |
+| FR-30 | UC-11 | [Sequence](diagrams/sequence-checkout.puml) | [payment-admin.service.ts](../apps/api/src/payments/payment-admin.service.ts) · [PaymentsManager.tsx](../apps/web/components/admin/payments/PaymentsManager.tsx) | [admin-operations.integration.spec.ts](../apps/api/src/orders/admin-operations.integration.spec.ts) | Có test danh sách, ghi chú và query lại; chưa có E2E UI quản lý giao dịch. |
+| FR-31 | UC-10–13 | [Use-case](diagrams/use-case-overview.puml) | [admin-tools.ts](../apps/web/lib/admin-tools.ts) · [useAdminRecipes.ts](../apps/web/components/admin/recipes/useAdminRecipes.ts) | [admin-orders.test.tsx](../apps/web/test/admin-orders.test.tsx) · [promotions-admin-contract.test.ts](../apps/web/test/promotions-admin-contract.test.ts) | Có code nhân bản/ẩn/CSV; thiếu minh chứng riêng bao phủ đủ thao tác và nội dung CSV. |
 
 ## Yêu cầu phi chức năng
 
-Ánh xạ NFR dưới đây xác định phạm vi áp dụng theo tiêu chí trong SRS; không tạo thêm mã use-case hoặc user story.
+| NFR | Thiết kế | Code / cấu hình | Test / minh chứng | Mức kiểm chứng / còn thiếu |
+|---|---|---|---|---|
+| NFR-01 — Hiệu năng menu | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [check-menu-performance.mjs](../scripts/check-menu-performance.mjs) | [check-menu-performance.test.mjs](../scripts/check-menu-performance.test.mjs) | [Kết quả local](evidence/repository-consistency/menu-performance.json); 100 lượt/API, 5 đồng thời, 10 warm-up, timeout 5 giây. Image local chưa gắn SHA; chưa coi là đo lại bản phát hành. |
+| NFR-02 — Responsive và khả năng thao tác | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [globals.css](../apps/web/app/globals.css) | [menu-catalog.test.tsx](../apps/web/test/menu-catalog.test.tsx) | [Menu](evidence/task-4.3.2-menu.md) và [PWA](evidence/task-5.1.2-pwa.md) có kiểm tra viewport; còn cần nghiệm thu toàn luồng và Admin/bàn phím. |
+| NFR-03 — Xác thực và phân quyền | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [jwt-auth.guard.ts](../apps/api/src/auth/jwt-auth.guard.ts) | [admin-operations.integration.spec.ts](../apps/api/src/orders/admin-operations.integration.spec.ts) | Có test guard, ownership, role và MAC sai; xem thêm test Auth/Payments ở bảng FR. |
+| NFR-04 — Transaction và chống trùng | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [orders.prisma-adapter.ts](../apps/api/src/orders/orders.prisma-adapter.ts) | [orders-business.integration.spec.ts](../apps/api/src/orders/orders-business.integration.spec.ts) | Có integration Orders/Payments/Inventory; cần bật DB theo từng suite. |
+| NFR-05 — Trạng thái lỗi và health | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [health.service.ts](../apps/api/src/health/health.service.ts) | [health-route.test.ts](../apps/web/test/health-route.test.ts) | Có unit/component/HTTP; [Compose](evidence/task-5.2.4-docker-compose.md) và CI/CD lưu kết quả riêng. |
+| NFR-06 — Tái tạo môi trường | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [compose.yaml](../compose.yaml) | [database.validation-spec.ts](../apps/api/test/database.validation-spec.ts) | [DB](evidence/task-5.2.3-database.md) có minh chứng tái tạo; [người ngoài nhóm](handover/outsider-verification.md) chưa thực hiện. |
+| NFR-07 — CI và chặn merge | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [ci.yml](../.github/workflows/ci.yml) | [menu-to-order.spec.ts](../apps/web/e2e/menu-to-order.spec.ts) | [CI pass/fail](evidence/task-4.4-ci.md); run mới trong báo cáo. Ruleset là cấu hình GitHub, không suy ra chỉ từ YAML. |
+| NFR-08 — Triển khai và rollback | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [cd.yml](../.github/workflows/cd.yml) | [operations.test.mjs](../scripts/db/operations.test.mjs) | [Deploy](evidence/task-5.3.1-5.4.1-deploy.md), [DB operations](evidence/task-5.3.2-database-backup-rollback.md); sửa workflow local cần chạy trên GitHub sau khi được phép push. |
+| NFR-09 — Cấu hình và log | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [compose.prod.yaml](../compose.prod.yaml) | [health.spec.ts](../apps/api/src/health/health.spec.ts) | Có test che URL DB ở health; chưa tuyên bố đã rà mọi log và toàn bộ lịch sử Git. |
+| NFR-10 — PWA | [Kiến trúc](architecture/architecture.md) · [Deployment](deployment.md) | [sw.js](../apps/web/public/sw.js) | [pwa-worker.test.ts](../apps/web/test/pwa-worker.test.ts) | [Minh chứng PWA](evidence/task-5.1.2-pwa.md) bao phủ offline/giỏ; còn chờ cài và mở standalone trên thiết bị hỗ trợ qua HTTPS. |
 
-| Mã yêu cầu | Use-case/User Story | Thiết kế/Sơ đồ | Code/API | Test |
-| --- | --- | --- | --- | --- |
-| NFR-01 | UC-01, UC-02: Hiệu năng API menu và chi tiết | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-02 | UC-01–UC-13: Giao diện máy tính/điện thoại | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-03 | UC-03, UC-05–UC-13: Xác thực, phân quyền và thanh toán | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-04 | UC-05, UC-06, UC-08, UC-10, UC-13: Nhất quán đơn, kho và điểm | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-05 | UC-01–UC-13: Trạng thái tải/lỗi, phục hồi và health check | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-06 | Xuyên suốt: Tái tạo môi trường, migration và seed | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-07 | Xuyên suốt: CI và chất lượng mã | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-08 | Xuyên suốt: Triển khai và rollback | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-09 | Xuyên suốt: Quản lý cấu hình và log | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
-| NFR-10 | UC-01–UC-09: PWA, giữ giỏ và xử lý mất mạng | Chưa đối chiếu | Chưa triển khai | Chưa có test/minh chứng |
+## Quy tắc cập nhật
 
-## Cách cập nhật
-
-1. Khi review Task 2–3, thay “Chưa đối chiếu” bằng liên kết đến sơ đồ/tài liệu thực sự bao phủ yêu cầu. Nếu chỉ bao phủ một phần, ghi rõ phần còn thiếu.
-2. Khi triển khai, thêm đường dẫn file và endpoint thực tế của repo mới; giữ thứ tự và mã yêu cầu theo SRS.
-3. Khi có kiểm thử, ghi tên/mã test thật, liên kết file test và kết quả chạy hoặc CI tương ứng. Phân biệt test dự kiến với test đã chạy.
-4. Một yêu cầu có thể liên kết nhiều sơ đồ, module và test. Không coi một test đơn lẻ là bằng chứng bao phủ toàn bộ tiêu chí chấp nhận.
-5. Cập nhật cùng PR khi yêu cầu, thiết kế, code hoặc test thay đổi. Không đánh dấu hoàn thành nếu thiếu bằng chứng nghiệm thu.
-
+Khi đổi yêu cầu, code hoặc test, cập nhật hàng tương ứng trong cùng PR. Ghi lệnh chạy, commit/image, môi trường, số test đạt/bỏ qua và phần chưa kiểm tra. Chỉ ghi nghiệm thu khi có xác nhận và đủ minh chứng AC.

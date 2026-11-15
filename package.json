@@ -2,7 +2,9 @@
   "name": "assignment-2-brewlite",
   "private": true,
   "scripts": {
-    "test:db-operations": "node --test scripts/db/*.test.mjs"
+    "test:db-operations": "node --test scripts/db/*.test.mjs",
+    "test:performance-script": "node --test scripts/check-menu-performance.test.mjs",
+    "check:menu-performance": "node scripts/check-menu-performance.mjs"
   },
   "workspaces": [
     "apps/api",

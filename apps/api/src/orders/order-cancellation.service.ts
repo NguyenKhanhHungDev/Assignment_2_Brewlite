@@ -58,16 +58,14 @@ export class OrderCancellationService implements OnModuleDestroy {
         throw new ConflictException(
           'Chỉ được hủy đơn chờ thanh toán hoặc thanh toán thất bại.',
         );
+      // A confirmed FAILED/CANCELLED outcome is final even if creation timed out.
+      // PENDING still blocks cancellation unless the gateway rejected creation.
       const unresolved = await tx.payment.count({
         where: {
           orderId: id,
           OR: [
             { status: { in: ['SUCCESS', 'RECONCILIATION_REQUIRED'] } },
             { status: 'PENDING', creationStatus: { not: 'REJECTED' } },
-            {
-              provider: 'ZALOPAY',
-              creationStatus: { in: ['CREATING', 'UNKNOWN'] },
-            },
           ],
         },
       });
