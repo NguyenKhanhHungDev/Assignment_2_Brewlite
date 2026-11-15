@@ -43,6 +43,8 @@ Local kế thừa `compose.yaml` với thứ tự **DB healthy → migrate/seed 
 
 ## 4. Phát hành và rollback
 
+Quy trình và script Task 5.3.2: [backup, restore, migration và rollback](database-backup-rollback.md). Script được kiểm thử trên Compose/DB riêng; thao tác EC2/production và tích hợp CD vẫn cần minh chứng theo môi trường thật.
+
 1. PR chạy **Install → Lint → Unit Test → Build**; lỗi thì không merge.
 2. Build image Web/API có tag SHA/phiên bản và push GHCR.
 3. Actions dùng secret SSH tới EC2; pull đúng tag, sao lưu và chạy migration đã kiểm tra tương thích. Migration lỗi thì dừng; không tự chạy seed demo production.

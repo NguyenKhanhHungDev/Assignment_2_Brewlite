@@ -21,3 +21,6 @@ apps/api/src/generated/
 output/playwright/
 apps/web/playwright-report/
 apps/web/test-results/
+
+# PostgreSQL archives/checksums are local operational data, never source code.
+/backups/
