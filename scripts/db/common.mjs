@@ -124,7 +124,16 @@ export async function migrationFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const result = [];
   for (const entry of entries.filter(e => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-    result.push({ name: entry.name, checksum: await sha256(join(dir, entry.name, 'migration.sql')) });
+    const sql = await readFile(join(dir, entry.name, 'migration.sql'));
+    // latin1 round-trips every byte: only CRLF/LF changes, never SQL, BOM or encoding.
+    const lf = sql.toString('latin1').replaceAll('\r\n', '\n');
+    const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+    const checksum = hash(sql);
+    result.push({
+      name: entry.name,
+      checksum, // Raw bytes remain mandatory for image vs reviewed artifact verification.
+      checksums: [...new Set([checksum, hash(Buffer.from(lf, 'latin1')), hash(Buffer.from(lf.replaceAll('\n', '\r\n'), 'latin1'))])],
+    });
   }
   if (!result.length) throw new Error('Không tìm thấy migration được review.');
   return result;
@@ -137,7 +146,7 @@ export function checkHistory(rows, files, complete = false) {
   const active = rows.filter(r => !r.rolled_back);
   if (active.some(r => !r.finished)) throw new Error('Có migration thất bại/chưa hoàn tất. Dừng và điều tra; không tự resolve/reset.');
   const expected = files.slice(0, active.length);
-  if (active.length > files.length || active.some((row, i) => row.migration_name !== expected[i]?.name || row.checksum !== expected[i]?.checksum)) throw new Error('Lịch sử/checksum migration khác artifact đang review.');
+  if (active.length > files.length || active.some((row, i) => row.migration_name !== expected[i]?.name || !expected[i]?.checksums.includes(row.checksum))) throw new Error('Lịch sử/checksum migration khác artifact đang review.');
   if (complete && active.length !== files.length) throw new Error('Migration chưa hoàn tất toàn bộ.');
 }
 export function main(fn) {

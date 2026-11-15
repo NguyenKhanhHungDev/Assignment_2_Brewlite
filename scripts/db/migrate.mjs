@@ -36,7 +36,9 @@ main(async () => {
     try { return JSON.parse(result.stdout); } catch { throw new Error('Metadata từ image migrate không hợp lệ.'); }
   };
   const imageFiles = await inMigrationImage('manifest');
-  if (JSON.stringify(imageFiles) !== JSON.stringify(files)) throw new Error('Migration trong image khác các file đang review. Dừng trước khi deploy.');
+  // History allows LF/CRLF variants; the image must still match reviewed bytes exactly.
+  const reviewedImageFiles = files.map(({ name, checksum }) => ({ name, checksum }));
+  if (JSON.stringify(imageFiles) !== JSON.stringify(reviewedImageFiles)) throw new Error('Migration trong image khác các file đang review. Dừng trước khi deploy.');
   const before = await inMigrationImage('status');
   if (![0, 1].includes(before.code)) throw new Error('Không kiểm tra được trạng thái migration.');
   const saved = await backup(ctx);
