@@ -22,6 +22,7 @@ PR ghi lịch sử thay đổi, không thay thế bằng chứng nghiệm thu. T
 - [Minh chứng giao diện menu Task 4.3.2](evidence/task-4.3.2-menu.md).
 - [Minh chứng Products API Task 4.3.1](evidence/task-4.3.1-products.md).
 - [Minh chứng quản lý tài liệu Task 4.2](evidence/task-4.2-docs.md).
+- Phát hành và bàn giao Task 5.4.2: [release notes](release/release-notes-v1.0.0.md), [quy trình tag/release](release/release-procedure.md), [kịch bản demo](handover/demo-script.md), [phiếu người ngoài nhóm](handover/outsider-verification.md), [Sprint Review](sprint/sprint-review.md), [Retrospective](sprint/retrospective.md).
 
 ## Khi sửa tài liệu
 
