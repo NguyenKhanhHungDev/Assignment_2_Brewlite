@@ -3,15 +3,58 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="${DEPLOY_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-brewlite}"
 COMPOSE_FILE="${COMPOSE_FILE:-$DEPLOY_DIR/compose.prod.yaml}"
 ENV_FILE="${ENV_FILE:-$DEPLOY_DIR/.env.prod}"
-RELEASE_FILE="${RELEASE_FILE:-$DEPLOY_DIR/.current-release}"
-PREVIOUS_RELEASE_FILE="${PREVIOUS_RELEASE_FILE:-$DEPLOY_DIR/.previous-release}"
-BACKUP_DIR="${BACKUP_DIR:-$DEPLOY_DIR/backups}"
+PENDING_RELEASE_FILE="${PENDING_RELEASE_FILE:-$DEPLOY_DIR/.pending-release}"
+BACKUP_DIR="${BACKUP_DIR:-/srv/brewlite/backups}"
+LOCK_FILE="${LOCK_FILE:-$DEPLOY_DIR/.deploy.lock}"
+SCHEMA_REVIEWED="${SCHEMA_REVIEWED:-false}"
 
-IMAGE_TAG="${1:-${IMAGE_TAG:-}}"
+IMAGE_TAG=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --schema-reviewed)
+      SCHEMA_REVIEWED="true"
+      shift
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      if [[ -n "$IMAGE_TAG" ]]; then
+        echo "Unexpected extra argument: $1" >&2
+        exit 1
+      fi
+      IMAGE_TAG="$1"
+      shift
+      ;;
+  esac
+done
+
 if [[ -z "$IMAGE_TAG" ]]; then
-  echo "Usage: $0 <image-tag>" >&2
+  echo "Usage: $0 --schema-reviewed <40-char-commit-sha>" >&2
+  exit 1
+fi
+
+if [[ ! "$IMAGE_TAG" =~ ^[a-f0-9]{40}$ ]]; then
+  echo "IMAGE_TAG must be a 40-character lowercase Git commit SHA (got: $IMAGE_TAG)." >&2
+  exit 1
+fi
+
+if [[ "$SCHEMA_REVIEWED" != "true" ]]; then
+  echo "Refusing to run migration without explicit --schema-reviewed confirmation." >&2
+  exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js is required on the EC2 host to execute scripts/db/*.mjs." >&2
+  exit 1
+fi
+
+if ! node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 22 ? 0 : 1)"; then
+  echo "Node.js >= 22 (recommended Node 24) is required on the EC2 host; found $(node -v)." >&2
   exit 1
 fi
 
@@ -25,19 +68,25 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-# Preserve caller-provided RUN_SEED override if passed explicitly by CI/workflow_dispatch.
-OVERRIDE_RUN_SEED="${RUN_SEED:-}"
+if [[ ! -f "$DEPLOY_DIR/scripts/db/migrate.mjs" || ! -d "$DEPLOY_DIR/apps/api/prisma/migrations" ]]; then
+  echo "Missing Issue #38 database scripts or reviewed Prisma migrations under $DEPLOY_DIR." >&2
+  exit 1
+fi
+
+mkdir -p "$DEPLOY_DIR"
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+  echo "Another deployment or rollback holds $LOCK_FILE. Refusing concurrent run." >&2
+  exit 1
+fi
 
 set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
 
-if [[ -n "$OVERRIDE_RUN_SEED" ]]; then
-  export RUN_SEED="$OVERRIDE_RUN_SEED"
-else
-  export RUN_SEED="${RUN_SEED:-false}"
-fi
+# Production deploy workflow never seeds demo data via CD (aligned with Issue #38).
+export RUN_SEED="false"
 
 IMAGE_REGISTRY_OWNER="${IMAGE_REGISTRY_OWNER:-${GITHUB_REPOSITORY_OWNER:-}}"
 if [[ -z "$IMAGE_REGISTRY_OWNER" ]]; then
@@ -60,78 +109,88 @@ require_non_placeholder() {
   fi
 }
 
-for var_name in DB_USER DB_PASSWORD DB_NAME JWT_SECRET BFF_PROXY_SECRET CADDY_PROXY_SECRET APP_DOMAIN; do
+for var_name in \
+  DB_USER DB_PASSWORD DB_NAME \
+  JWT_SECRET BFF_PROXY_SECRET CADDY_PROXY_SECRET \
+  APP_DOMAIN ZALOPAY_APP_ID ZALOPAY_KEY1 ZALOPAY_KEY2
+do
   require_non_placeholder "$var_name"
 done
 
 compose() {
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+  docker compose --project-name "$COMPOSE_PROJECT_NAME" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
 
-# Enforce PostgreSQL internal-only constraint in rendered Compose config (supports both short and long port syntax).
-if python3 -c '
-import json, sys
-cfg = json.load(sys.stdin)
-db = cfg.get("services", {}).get("db", {})
-if db.get("ports"):
-    sys.exit(1)
-' <<<"$(compose config --format json)"; then
-  :
-else
-  echo "Refusing to deploy: compose config exposes ports on db service." >&2
+# Enforce internal-only isolation for db, api, and web in rendered Compose config.
+if ! compose config --format json | node -e '
+const fs = require("node:fs");
+const cfg = JSON.parse(fs.readFileSync(0, "utf8"));
+for (const svc of ["db", "api", "web"]) {
+  const ports = cfg.services?.[svc]?.ports;
+  if (Array.isArray(ports) && ports.length > 0) {
+    console.error(`Service ${svc} unexpectedly exposes host ports`);
+    process.exit(1);
+  }
+}
+'; then
   exit 1
 fi
 
-echo "==> Pulling release images for tag ${IMAGE_TAG}..."
-compose pull migrate api web caddy
+if [[ "${SKIP_PULL:-false}" != "true" ]]; then
+  echo "==> Pulling release images for SHA ${IMAGE_TAG}..."
+  compose pull migrate api web caddy
+else
+  echo "==> SKIP_PULL=true: verifying locally present images for ${IMAGE_TAG}..."
+  for img in "$API_MIGRATE_IMAGE" "$API_IMAGE" "$WEB_IMAGE" "caddy:2-alpine"; do
+    docker image inspect "$img" >/dev/null
+  done
+fi
 
 echo "==> Ensuring PostgreSQL container is running and healthy..."
 compose up -d --wait db
 
-if [[ -n "$(compose port db 5432 2>/dev/null || true)" ]]; then
-  echo "Refusing to deploy: db container publishes port 5432 on host." >&2
+DB_CID="$(compose ps -q db)"
+if [[ -z "$DB_CID" ]] || ! docker inspect "$DB_CID" --format '{{json .NetworkSettings.Ports}}' | node -e '
+const fs = require("node:fs");
+const ports = JSON.parse(fs.readFileSync(0, "utf8")) || {};
+for (const [portKey, bindings] of Object.entries(ports)) {
+  if (Array.isArray(bindings) && bindings.length > 0) {
+    console.error(`Refusing to deploy: db container publishes ${portKey} on host.`);
+    process.exit(1);
+  }
+}
+'; then
+  echo "Refusing to deploy: could not confirm db port isolation." >&2
   exit 1
 fi
 
 mkdir -p "$BACKUP_DIR"
-BACKUP_FILE="$BACKUP_DIR/brewlite-${DB_NAME}-$(date -u +%Y%m%dT%H%M%SZ)-${IMAGE_TAG:0:12}.sql.gz"
-echo "==> Creating pre-migration PostgreSQL backup at ${BACKUP_FILE}..."
-compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" --clean --if-exists --no-owner --no-privileges | gzip >"$BACKUP_FILE"
+chmod 700 "$BACKUP_DIR"
 
-if [[ ! -s "$BACKUP_FILE" ]]; then
-  echo "Backup file is empty: $BACKUP_FILE" >&2
-  exit 1
-fi
+echo "==> Running Issue #38 backup + Prisma migration verification (no seed)..."
+node "$DEPLOY_DIR/scripts/db/migrate.mjs" \
+  --project-name "$COMPOSE_PROJECT_NAME" \
+  --compose-file "$COMPOSE_FILE" \
+  --env-file "$ENV_FILE" \
+  --database "$DB_NAME" \
+  --confirm-database "$DB_NAME" \
+  --migrations-dir "$DEPLOY_DIR/apps/api/prisma/migrations" \
+  --output-dir "$BACKUP_DIR" \
+  --schema-reviewed
 
-# Keep the 14 most recent pre-migration backups to control disk usage on 30 GiB EC2 root volume.
-ls -1t "$BACKUP_DIR"/brewlite-*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm -f
+echo "==> Starting updated api, web, and caddy containers (--no-deps)..."
+compose up -d --no-deps --wait --remove-orphans api web caddy
 
-echo "==> Running database migrations (RUN_SEED=${RUN_SEED})..."
-if ! compose run --rm migrate; then
-  echo "Migration failed. Running containers were left unchanged; backup saved at ${BACKUP_FILE}." >&2
-  exit 1
-fi
+cat >"$PENDING_RELEASE_FILE" <<EOF
+IMAGE_TAG=$IMAGE_TAG
+IMAGE_REGISTRY_OWNER=$IMAGE_REGISTRY_OWNER
+API_IMAGE=$API_IMAGE
+API_MIGRATE_IMAGE=$API_MIGRATE_IMAGE
+WEB_IMAGE=$WEB_IMAGE
+COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
+DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+EOF
 
-if [[ -f "$RELEASE_FILE" ]]; then
-  cp "$RELEASE_FILE" "$PREVIOUS_RELEASE_FILE"
-fi
-
-{
-  echo "IMAGE_TAG=$IMAGE_TAG"
-  echo "IMAGE_REGISTRY_OWNER=$IMAGE_REGISTRY_OWNER"
-  echo "API_IMAGE=$API_IMAGE"
-  echo "API_MIGRATE_IMAGE=$API_MIGRATE_IMAGE"
-  echo "WEB_IMAGE=$WEB_IMAGE"
-  echo "DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-} >"$RELEASE_FILE"
-
-echo "==> Starting updated api, web, and caddy containers..."
-compose up -d --wait --remove-orphans api web caddy
-
-echo "==> Verifying container states..."
+echo "==> Container status:"
 compose ps
-
-echo "==> Pruning dangling images..."
-docker image prune -f >/dev/null 2>&1 || true
-
-echo "==> Deployment of ${IMAGE_TAG} completed successfully."
+echo "==> Pending release metadata written to $PENDING_RELEASE_FILE (run mark-release.sh after HTTPS & port smoke checks pass)."

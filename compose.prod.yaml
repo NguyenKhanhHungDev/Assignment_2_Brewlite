@@ -21,7 +21,7 @@ services:
     # PostgreSQL stays strictly internal on the Compose network (no host ports).
 
   migrate:
-    image: ${API_MIGRATE_IMAGE:?API_MIGRATE_IMAGE is required}
+    image: ${API_MIGRATE_IMAGE:-missing-api-migrate-image}
     restart: "no"
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
@@ -43,9 +43,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       BFF_PROXY_SECRET: ${BFF_PROXY_SECRET:?BFF_PROXY_SECRET is required}
       PORT: 3001
-      ZALOPAY_APP_ID: ${ZALOPAY_APP_ID:-554}
-      ZALOPAY_KEY1: ${ZALOPAY_KEY1:-8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn}
-      ZALOPAY_KEY2: ${ZALOPAY_KEY2:-uUfsWgfLkRLzq6W2uNXTCxrfxs51auny}
+      ZALOPAY_APP_ID: ${ZALOPAY_APP_ID:?ZALOPAY_APP_ID is required}
+      ZALOPAY_KEY1: ${ZALOPAY_KEY1:?ZALOPAY_KEY1 is required}
+      ZALOPAY_KEY2: ${ZALOPAY_KEY2:?ZALOPAY_KEY2 is required}
       ZALOPAY_API_BASE_URL: ${ZALOPAY_API_BASE_URL:-https://sb-openapi.zalopay.vn}
       ZALOPAY_CALLBACK_URL: ${ZALOPAY_CALLBACK_URL:-https://${APP_DOMAIN}/payments/zalopay/callback}
       ZALOPAY_RETURN_URL: ${ZALOPAY_RETURN_URL:-https://${APP_DOMAIN}/payment/result}

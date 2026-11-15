@@ -4,11 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      run_seed:
-        description: "Run prisma db seed during migration (first deploy only)"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -50,9 +45,35 @@ jobs:
           npm run test -- --maxWorkers=1
           npm run build
 
+  db-operations-gate:
+    name: DB operations and deploy script checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BREWLITE_DB_OPERATIONS_TESTS: "1"
+      BREWLITE_MIGRATE_TEST_IMAGE: brewlite-db-ops-migrate:cd-gate
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Check shell and DB script syntax
+        run: |
+          bash -n deploy/scripts/deploy.sh deploy/scripts/mark-release.sh deploy/scripts/rollback.sh
+          for file in scripts/db/*.mjs; do node --check "$file"; done
+          docker compose config --quiet
+
+      - name: Build migration artifact from apps/api context
+        run: docker build --target migration --tag "$BREWLITE_MIGRATE_TEST_IMAGE" ./apps/api
+
+      - name: Test Issue #38 backup, restore, migration and rollback
+        run: npm run test:db-operations
+
   build-and-push:
     name: Build and push images
-    needs: quality-gate
+    needs: [quality-gate, db-operations-gate]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,36 +96,34 @@ jobs:
       - name: Build and push brewlite-api-migrate
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/api/Dockerfile
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
           target: migration
           platforms: linux/amd64
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api-migrate:${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api-migrate:latest
           cache-from: type=gha,scope=api-migrate
           cache-to: type=gha,mode=max,scope=api-migrate
 
       - name: Build and push brewlite-api
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/api/Dockerfile
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
           target: runtime
           platforms: linux/amd64
           push: true
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api:${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api:latest
           cache-from: type=gha,scope=api-runtime
           cache-to: type=gha,mode=max,scope=api-runtime
 
       - name: Build and push brewlite-web
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/web/Dockerfile
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
           target: runtime
           platforms: linux/amd64
           push: true
@@ -112,7 +131,6 @@ jobs:
             API_INTERNAL_URL=http://api:3001
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-web:${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-web:latest
           cache-from: type=gha,scope=web-runtime
           cache-to: type=gha,mode=max,scope=web-runtime
 
@@ -146,7 +164,7 @@ jobs:
             fi
           done
 
-      - name: Deploy release via SSH
+      - name: Deploy release via SSH and verify production HTTPS
         shell: bash
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -154,11 +172,11 @@ jobs:
           EC2_PORT: ${{ secrets.EC2_PORT }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_DEPLOY_PATH: ${{ secrets.EC2_DEPLOY_PATH }}
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
           GHCR_ACTOR: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ github.sha }}
           IMAGE_REGISTRY_OWNER: ${{ github.repository_owner }}
-          RUN_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.run_seed == true && 'true' || '' }}
         run: |
           set -euo pipefail
 
@@ -183,48 +201,35 @@ jobs:
             -o ConnectTimeout=20
             -o BatchMode=yes
           )
-          SCP_OPTS=(
-            -P "$SSH_PORT"
-            -o StrictHostKeyChecking=yes
-            -o "UserKnownHostsFile=$KNOWN_HOSTS_FILE"
-            -o ConnectTimeout=20
-            -o BatchMode=yes
-          )
 
-          ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
-            "mkdir -p '$DEPLOY_PATH/deploy/caddy' '$DEPLOY_PATH/deploy/scripts'"
-
-          scp "${SCP_OPTS[@]}" compose.prod.yaml \
-            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/compose.prod.yaml"
-          scp "${SCP_OPTS[@]}" deploy/caddy/Caddyfile \
-            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/deploy/caddy/Caddyfile"
-          scp "${SCP_OPTS[@]}" deploy/scripts/deploy.sh deploy/scripts/rollback.sh \
-            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/deploy/scripts/"
+          # Transfer Compose, Caddy, deploy scripts, Issue #38 DB scripts, and reviewed migrations atomically.
+          tar -czf - \
+            compose.prod.yaml \
+            deploy/caddy/Caddyfile \
+            deploy/scripts/deploy.sh \
+            deploy/scripts/mark-release.sh \
+            deploy/scripts/rollback.sh \
+            scripts/db \
+            apps/api/prisma/migrations \
+          | ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "mkdir -p '$DEPLOY_PATH' && rm -rf '$DEPLOY_PATH/apps/api/prisma/migrations' '$DEPLOY_PATH/scripts/db' && tar -C '$DEPLOY_PATH' -xzf -"
 
           printf '%s\n' "$GHCR_TOKEN" | ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
             "docker login ghcr.io -u '$GHCR_ACTOR' --password-stdin"
 
-          # Always log out of ghcr.io on EC2 even if deployment fails.
           remote_status=0
           ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
-            "chmod +x '$DEPLOY_PATH/deploy/scripts/deploy.sh' '$DEPLOY_PATH/deploy/scripts/rollback.sh' && \
+            "chmod +x '$DEPLOY_PATH/deploy/scripts/deploy.sh' '$DEPLOY_PATH/deploy/scripts/mark-release.sh' '$DEPLOY_PATH/deploy/scripts/rollback.sh' && \
              DEPLOY_DIR='$DEPLOY_PATH' \
              IMAGE_REGISTRY_OWNER='${IMAGE_REGISTRY_OWNER,,}' \
-             RUN_SEED='$RUN_SEED' \
-             '$DEPLOY_PATH/deploy/scripts/deploy.sh' '$IMAGE_TAG'" || remote_status=$?
+             '$DEPLOY_PATH/deploy/scripts/deploy.sh' --schema-reviewed '$IMAGE_TAG'" || remote_status=$?
 
           ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
             "docker logout ghcr.io >/dev/null 2>&1 || true"
 
-          exit "$remote_status"
-
-      - name: Verify production HTTPS health and closed database port
-        shell: bash
-        env:
-          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          set -euo pipefail
+          if [[ "$remote_status" -ne 0 ]]; then
+            exit "$remote_status"
+          fi
 
           echo "Checking public HTTPS Web, API, DB health, and BFF routes..."
           CHECK_TIMEOUT_MS=120000 node scripts/check-compose.mjs \
@@ -236,3 +241,7 @@ jobs:
             echo "::error::PostgreSQL port 5432 is publicly reachable on ${EC2_HOST}!"
             exit 1
           fi
+
+          # Promote .pending-release -> .current-release only after external HTTPS & closed-5432 checks pass.
+          ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "DEPLOY_DIR='$DEPLOY_PATH' '$DEPLOY_PATH/deploy/scripts/mark-release.sh' '$IMAGE_TAG'"
