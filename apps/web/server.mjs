@@ -1,11 +1,32 @@
+import { timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
+import { isIP } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 // This entry point is required for BFF IP throttling. Never trust client XFF.
-// A future external ingress needs an explicitly reviewed proxy topology.
+// Behind Caddy on the internal Compose network, only trust X-BrewLite-Real-IP
+// when accompanied by a matching internal CADDY_PROXY_SECRET.
 export function sanitizePeerHeaders(request) {
-  request.headers['x-forwarded-for'] = request.socket.remoteAddress ?? '';
+  const secret = process.env.CADDY_PROXY_SECRET;
+  const token = request.headers['x-brewlite-proxy-token'];
+  const realIp = request.headers['x-brewlite-real-ip'];
+  let clientIp = request.socket.remoteAddress ?? '';
+
+  if (
+    secret &&
+    typeof token === 'string' &&
+    typeof realIp === 'string' &&
+    Buffer.byteLength(token) === Buffer.byteLength(secret) &&
+    timingSafeEqual(Buffer.from(token), Buffer.from(secret)) &&
+    isIP(realIp)
+  ) {
+    clientIp = realIp;
+  }
+
+  request.headers['x-forwarded-for'] = clientIp;
+  delete request.headers['x-brewlite-proxy-token'];
+  delete request.headers['x-brewlite-real-ip'];
   delete request.headers['x-brewlite-client-ip'];
   delete request.headers['x-brewlite-proxy-secret'];
   delete request.headers['x-forwarded-host'];

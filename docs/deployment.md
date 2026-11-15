@@ -62,3 +62,23 @@ Quy trình và script Task 5.3.2: [backup, restore, migration và rollback](data
 | Caddy, DNS, registry, CI/CD, backup/log | Cấu hình cần bổ sung trên repo mới và môi trường triển khai |
 
 Trước nghiệm thu: kiểm tra tài khoản/chi phí AWS, cập nhật tài nguyên và URL thật, cấu hình TLS/secret/backup/log, kiểm chứng health/smoke và ánh xạ tới code mới. PWA và yêu cầu Ví/Thẻ Sandbox được kiểm chứng khi hoàn thiện chức năng.
+
+
+## Hiện thực triển khai & CD (Task 5.3.1 & Task 5.4.1)
+
+Các tệp triển khai và tự động hóa phát hành trong repository gồm:
+
+- [`compose.prod.yaml`](../compose.prod.yaml): Định nghĩa 5 service (`db`, `migrate`, `api`, `web`, `caddy`). Chỉ `caddy` mở port `80`/`443`; `db`, `api` và `web` chỉ giao tiếp nội bộ qua Docker network, `RUN_SEED` mặc định `false`, và toàn bộ secret (kể cả `ZALOPAY_APP_ID`, `ZALOPAY_KEY1`, `ZALOPAY_KEY2`) bắt buộc nạp từ `/opt/brewlite/.env.prod`.
+- [`deploy/caddy/Caddyfile`](../deploy/caddy/Caddyfile): Reverse proxy HTTPS cho `{$APP_DOMAIN}`, định tuyến `/health` và `/payments/zalopay/callback` sang `api:3001`, toàn bộ route còn lại sang `web:3000`, đồng thời chuyển `X-BrewLite-Real-IP` kèm `X-BrewLite-Proxy-Token`.
+- [`apps/web/server.mjs`](../apps/web/server.mjs): Chỉ tin cậy `x-brewlite-real-ip` khi `x-brewlite-proxy-token` khớp `CADDY_PROXY_SECRET` bằng so sánh `timingSafeEqual`; trong mọi trường hợp khác tiếp tục xóa/không tin cậy header giả mạo từ client.
+- [`.env.prod.example`](../.env.prod.example): Mẫu biến môi trường đặt tại `/opt/brewlite/.env.prod` trên EC2 (chỉ chứa placeholder, không commit secret thật hay khóa ZaloPay lên Git).
+- [`deploy/scripts/deploy.sh`](../deploy/scripts/deploy.sh), [`deploy/scripts/mark-release.sh`](../deploy/scripts/mark-release.sh) & [`deploy/scripts/rollback.sh`](../deploy/scripts/rollback.sh): Phối hợp trực tiếp với bộ script Issue `#38` (`scripts/db/migrate.mjs` và `scripts/db/rollback-app.mjs`), sử dụng khóa `flock`, backup `.dump` + `.sha256` tại `/srv/brewlite/backups` (ngoài cây release, không tự xóa), deploy `api`/`web`/`caddy` bằng `--no-deps`, và chỉ cập nhật `.current-release`/`.previous-release` sau khi health check HTTPS và kiểm tra đóng port `5432` thành công.
+- [`.github/workflows/cd.yml`](../.github/workflows/cd.yml): Pipeline CD chạy trên `push` vào `main` và `workflow_dispatch`, gồm `quality-gate` & `db-operations-gate` -> `build-and-push` (`linux/amd64` dùng context `./apps/api` và `./apps/web`, tag `${{ github.sha }}`) -> `deploy` (SSH chuyển `compose.prod.yaml`, `Caddyfile`, `deploy/scripts/`, `scripts/db/`, `apps/api/prisma/migrations/`, chạy `deploy.sh --schema-reviewed`, kiểm tra `scripts/check-compose.mjs` qua HTTPS + đóng port `5432`, rồi chạy `mark-release.sh`).
+
+### Chuẩn bị một lần trên AWS EC2 (Ubuntu 24.04 LTS x86_64)
+
+1. Mở Security Group inbound các cổng `22` (SSH), `80` (HTTP), `443` (HTTPS); tuyệt đối không mở `5432`.
+2. Cài Docker Engine + Docker Compose plugin, thêm user SSH (`ubuntu`) vào nhóm `docker`, cài Node.js **24** trên host (để chạy `scripts/db/*.mjs`), tạo swap 2 GiB nếu chạy instance RAM nhỏ.
+3. Tạo `/opt/brewlite` và `/srv/brewlite/backups` (`chmod 700` thuộc quyền `ubuntu`); copy `.env.prod.example` thành `/opt/brewlite/.env.prod`, điền `APP_DOMAIN`, `IMAGE_REGISTRY_OWNER`, thông số ZaloPay và sinh secret ngẫu nhiên mạnh (`openssl rand -hex 32`) cho `DB_PASSWORD`, `JWT_SECRET`, `BFF_PROXY_SECRET`, `CADDY_PROXY_SECRET`.
+4. Trỏ DuckDNS (`brewlite-a2.duckdns.org`) về Public IP của EC2 (khuyến nghị gắn Elastic IP hoặc cron cập nhật DuckDNS nếu EC2 có thể dừng/khởi động lại).
+5. Cấu hình GitHub Environment `production` (không bật required reviewers) hoặc Repository Secrets: `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `APP_DOMAIN` (tùy chọn `EC2_PORT`, `EC2_DEPLOY_PATH`). Nếu khởi tạo database trống hoàn toàn lần đầu, người vận hành chạy seed thủ công một lần có chủ đích trên EC2 (`docker compose --project-name brewlite --env-file /opt/brewlite/.env.prod -f /opt/brewlite/compose.prod.yaml run --rm --no-deps -e RUN_SEED=true migrate`); các lần CD thường kỳ không chạy seed.
