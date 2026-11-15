@@ -1,6 +1,9 @@
 {
   "name": "assignment-2-brewlite",
   "private": true,
+  "scripts": {
+    "test:db-operations": "node --test scripts/db/operations.test.mjs"
+  },
   "workspaces": [
     "apps/api",
     "apps/web"

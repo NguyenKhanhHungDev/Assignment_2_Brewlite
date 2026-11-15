@@ -1,0 +1,38 @@
+name: Database operations
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/db/**'
+      - 'apps/api/prisma/**'
+      - 'apps/api/prisma7.config.ts'
+      - 'apps/api/Dockerfile'
+      - 'apps/api/package*.json'
+      - 'compose*.yaml'
+      - '.github/workflows/database-operations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database-operations:
+    name: Backup restore migration rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BREWLITE_DB_OPERATIONS_TESTS: '1'
+      BREWLITE_MIGRATE_TEST_IMAGE: brewlite-db-ops-migrate:test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Check syntax
+        run: |
+          for file in scripts/db/*.mjs; do node --check "$file"; done
+          docker compose config --quiet
+      - name: Build migration artifact from this checkout
+        run: docker build --target migration --tag "$BREWLITE_MIGRATE_TEST_IMAGE" apps/api
+      - name: Test against isolated PostgreSQL 17
+        run: npm run test:db-operations
