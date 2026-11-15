@@ -20,8 +20,23 @@ Dự án BrewLite dùng Next.js, NestJS và PostgreSQL, phát triển từ yêu 
 - [Docker Compose và kiểm tra sức khỏe (Task 5.2.4)](docs/evidence/task-5.2.4-docker-compose.md)
 - [Backup, restore, migration và rollback (Task 5.3.2)](docs/database-backup-rollback.md)
 - [Quy trình nhánh và pull request](docs/planning/workflow.md)
+- [Release notes v1.0.0](docs/release/release-notes-v1.0.0.md) và [quy trình tag/release](docs/release/release-procedure.md)
+- [Kịch bản demo](docs/handover/demo-script.md) và [phiếu xác nhận của người ngoài nhóm](docs/handover/outsider-verification.md)
+- [Sprint Review](docs/sprint/sprint-review.md) và [Retrospective](docs/sprint/retrospective.md)
 
-Hướng triển khai AWS EC2 trong Task 3.2 hiện là thiết kế dự kiến. Nền ứng dụng và Products API đọc menu đã được kiểm tra local. Giao diện menu gọi API, có tìm kiếm/lọc và trạng thái tải/trống/lỗi. CI kiểm tra pull request; các module nghiệp vụ khác, CD và deploy sẽ được bổ sung theo từng issue.
+Production chạy trên AWS EC2 tại https://brewlite-a2.duckdns.org (xem phần triển khai bên dưới và [minh chứng](docs/evidence/task-5.3.1-5.4.1-deploy.md)). Các hạn chế còn lại được liệt kê trong [release notes](docs/release/release-notes-v1.0.0.md).
+
+## Bắt đầu nhanh (người mới, chỉ cần Git, Docker và Node.js 24)
+
+```bash
+git clone https://github.com/NguyenKhanhHungDev/Assignment_2_Brewlite.git
+cd Assignment_2_Brewlite
+cp -n .env.example .env
+docker compose up -d --build --wait
+node scripts/check-compose.mjs
+```
+
+Mở http://localhost:3000. Lệnh kiểm tra phải đạt 7/7 bước. `.env.example` chỉ chứa giá trị local và khóa ZaloPay Sandbox công khai; **không dùng cho production**. Tắt stack bằng `docker compose down` (giữ dữ liệu). Nếu cổng 3000/3001 đang bận, xem phần Docker Compose bên dưới. Muốn chạy từng service riêng hoặc chạy test, xem các phần tiếp theo.
 
 ## Cài đặt và chuẩn bị database local
 
@@ -207,3 +222,21 @@ Cấu hình production chạy trên Ubuntu Server (`linux/amd64`) dùng `compose
 - **Triển khai tích hợp #38**: `deploy/scripts/deploy.sh` khóa tiến trình bằng `flock`, kiểm tra biến môi trường `.env.prod`, xác nhận `db`/`api`/`web` không public port, sau đó gọi thẳng `scripts/db/migrate.mjs` (tạo backup `.dump` + `.sha256` tại `/srv/brewlite/backups` và chạy Prisma migration không seed), khởi động lại `api`/`web`/`caddy` bằng `--no-deps`, và chỉ ghi nhận `.current-release` (qua `mark-release.sh`) sau khi health/smoke ngoài Internet đạt. Rollback dùng `deploy/scripts/rollback.sh` gọi `scripts/db/rollback-app.mjs`.
 - **Kiểm tra sau deploy**: chạy `scripts/check-compose.mjs` qua `https://<APP_DOMAIN>` và kiểm tra cổng `5432` không truy cập được từ ngoài Internet.
 - **Secrets & thiết lập EC2**: sử dụng `.env.prod.example` làm mẫu cho `/opt/brewlite/.env.prod` trên EC2 (tự cấu hình mật khẩu DB, JWT/proxy secrets và thông số ZaloPay trên EC2, không commit lên Git) và cấu hình secrets trong GitHub (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `APP_DOMAIN`, tùy chọn `EC2_PORT`, `EC2_DEPLOY_PATH`). Chi tiết xem [tài liệu triển khai](docs/deployment.md) và [minh chứng Task 5.3.1 & 5.4.1](docs/evidence/task-5.3.1-5.4.1-deploy.md).
+
+## Rollback và khôi phục (tóm tắt)
+
+- **Rollback ứng dụng** (đưa `api`/`web` về image trước, không đổi DB): chạy trên EC2 trong `/opt/brewlite`, **sau khi** xác minh schema tương thích với code cũ. Script từ chối chạy nếu thiếu `--schema-compatible`.
+
+  ```bash
+  cd /opt/brewlite
+  bash deploy/scripts/rollback.sh --schema-compatible                 # về bản trong .previous-release
+  bash deploy/scripts/rollback.sh --schema-compatible <SHA_40_KY_TU>  # hoặc chỉ định commit SHA
+  ```
+
+  Script khóa bằng `flock`, đọc `.env.prod`, gọi `scripts/db/rollback-app.mjs`, kiểm tra health rồi cập nhật `.current-release`. Cần Node.js trên host EC2.
+- **Rollback image không hoàn tác migration.** Nếu cần phục hồi dữ liệu, dùng backup `.dump` trong `/srv/brewlite/backups` theo runbook thủ công trong [database-backup-rollback.md](docs/database-backup-rollback.md) (mục 7).
+- Không xóa volume `brewlite_pg_data`, không chạy seed trên production hiện có dữ liệu.
+
+## Phát hành và bàn giao (Task 5.4.2)
+
+Tag và GitHub Release theo [quy trình phát hành](docs/release/release-procedure.md); nội dung phát hành ở [release notes](docs/release/release-notes-v1.0.0.md). Hạn chế còn lại được ghi trong release notes, không giấu ở nơi khác.
