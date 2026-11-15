@@ -1,0 +1,238 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_seed:
+        description: "Run prisma db seed during migration (first deploy only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  quality-gate:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client and check API
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://brewlite:brewlite@127.0.0.1:5432/brewlite?schema=public
+        run: |
+          npm run db:generate
+          npm run lint
+          npm run test -- --maxWorkers=1
+          npm run test:e2e -- --maxWorkers=1
+          npm run build
+
+      - name: Check Web
+        working-directory: apps/web
+        run: |
+          npm run lint
+          npm run test -- --maxWorkers=1
+          npm run build
+
+  build-and-push:
+    name: Build and push images
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Normalize GHCR owner name
+        shell: bash
+        run: echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push brewlite-api-migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migration
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api-migrate:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api-migrate:latest
+          cache-from: type=gha,scope=api-migrate
+          cache-to: type=gha,mode=max,scope=api-migrate
+
+      - name: Build and push brewlite-api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-api:latest
+          cache-from: type=gha,scope=api-runtime
+          cache-to: type=gha,mode=max,scope=api-runtime
+
+      - name: Build and push brewlite-web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            API_INTERNAL_URL=http://api:3001
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-web:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/brewlite-web:latest
+          cache-from: type=gha,scope=web-runtime
+          cache-to: type=gha,mode=max,scope=web-runtime
+
+  deploy:
+    name: Deploy to EC2 and verify health
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Validate deployment configuration
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
+        run: |
+          for secret_name in EC2_HOST EC2_USER EC2_SSH_KEY APP_DOMAIN; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "::error::Missing required GitHub secret: ${secret_name}"
+              exit 1
+            fi
+          done
+
+      - name: Deploy release via SSH
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_PORT: ${{ secrets.EC2_PORT }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_DEPLOY_PATH: ${{ secrets.EC2_DEPLOY_PATH }}
+          GHCR_ACTOR: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_REGISTRY_OWNER: ${{ github.repository_owner }}
+          RUN_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.run_seed == true && 'true' || '' }}
+        run: |
+          set -euo pipefail
+
+          SSH_PORT="${EC2_PORT:-22}"
+          DEPLOY_PATH="${EC2_DEPLOY_PATH:-/opt/brewlite}"
+          KNOWN_HOSTS_FILE="$(mktemp)"
+
+          eval "$(ssh-agent -s)"
+          cleanup() {
+            rm -f "$KNOWN_HOSTS_FILE"
+            ssh-agent -k >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          printf '%s\n' "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
+          ssh-keyscan -p "$SSH_PORT" -H "$EC2_HOST" > "$KNOWN_HOSTS_FILE"
+
+          SSH_OPTS=(
+            -p "$SSH_PORT"
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$KNOWN_HOSTS_FILE"
+            -o ConnectTimeout=20
+            -o BatchMode=yes
+          )
+          SCP_OPTS=(
+            -P "$SSH_PORT"
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$KNOWN_HOSTS_FILE"
+            -o ConnectTimeout=20
+            -o BatchMode=yes
+          )
+
+          ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "mkdir -p '$DEPLOY_PATH/deploy/caddy' '$DEPLOY_PATH/deploy/scripts'"
+
+          scp "${SCP_OPTS[@]}" compose.prod.yaml \
+            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/compose.prod.yaml"
+          scp "${SCP_OPTS[@]}" deploy/caddy/Caddyfile \
+            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/deploy/caddy/Caddyfile"
+          scp "${SCP_OPTS[@]}" deploy/scripts/deploy.sh deploy/scripts/rollback.sh \
+            "${EC2_USER}@${EC2_HOST}:$DEPLOY_PATH/deploy/scripts/"
+
+          printf '%s\n' "$GHCR_TOKEN" | ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "docker login ghcr.io -u '$GHCR_ACTOR' --password-stdin"
+
+          # Always log out of ghcr.io on EC2 even if deployment fails.
+          remote_status=0
+          ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "chmod +x '$DEPLOY_PATH/deploy/scripts/deploy.sh' '$DEPLOY_PATH/deploy/scripts/rollback.sh' && \
+             DEPLOY_DIR='$DEPLOY_PATH' \
+             IMAGE_REGISTRY_OWNER='${IMAGE_REGISTRY_OWNER,,}' \
+             RUN_SEED='$RUN_SEED' \
+             '$DEPLOY_PATH/deploy/scripts/deploy.sh' '$IMAGE_TAG'" || remote_status=$?
+
+          ssh "${SSH_OPTS[@]}" "${EC2_USER}@${EC2_HOST}" \
+            "docker logout ghcr.io >/dev/null 2>&1 || true"
+
+          exit "$remote_status"
+
+      - name: Verify production HTTPS health and closed database port
+        shell: bash
+        env:
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking public HTTPS Web, API, DB health, and BFF routes..."
+          CHECK_TIMEOUT_MS=120000 node scripts/check-compose.mjs \
+            --api-url="https://${APP_DOMAIN}" \
+            --web-url="https://${APP_DOMAIN}"
+
+          echo "Confirming PostgreSQL port 5432 is not publicly reachable..."
+          if nc -z -w 3 "$EC2_HOST" 5432; then
+            echo "::error::PostgreSQL port 5432 is publicly reachable on ${EC2_HOST}!"
+            exit 1
+          fi

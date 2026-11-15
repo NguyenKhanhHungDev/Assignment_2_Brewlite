@@ -1,0 +1,27 @@
+{$APP_DOMAIN} {
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "SAMEORIGIN"
+  }
+
+  # API health check for CD and monitoring
+  handle /health {
+    reverse_proxy api:3001
+  }
+
+  # ZaloPay Sandbox payment callback directly to NestJS API
+  handle /payments/zalopay/callback {
+    reverse_proxy api:3001
+  }
+
+  # Web application, BFF (/api/session/*, /api/health), and Next.js rewrites
+  handle {
+    reverse_proxy web:3000 {
+      header_up X-BrewLite-Real-IP {remote_host}
+      header_up X-BrewLite-Proxy-Token {$CADDY_PROXY_SECRET}
+    }
+  }
+}
