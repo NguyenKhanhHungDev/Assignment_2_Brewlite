@@ -55,7 +55,7 @@ describe('Database operations with isolated Docker Compose/PostgreSQL 17', { ski
   migrate:
     image: \${TEST_MIGRATE_IMAGE}
     environment:
-      DATABASE_URL: postgresql://brewlite:\${TEST_DB_PASSWORD}@db:5432/brewlite_migrate_test?schema=public
+      DATABASE_URL: postgresql://brewlite:\${TEST_DB_PASSWORD}@db:5432/\${TEST_MIGRATE_DATABASE:-brewlite_migrate_test}?schema=public
     volumes:
       - ${JSON.stringify(fixture + ':/app/prisma:ro')}
     depends_on:
@@ -167,6 +167,50 @@ volumes:
     assert.equal(sql('brewlite_migrate_test', 'SELECT count(*) FROM "SeedRun"'), '0');
     assert.equal(sql('brewlite_migrate_test', 'SELECT count(*) FROM "User"'), '0');
     ok(script('migrate', ...args, '--schema-reviewed'));
+  });
+
+  it('accepts real LF/CRLF Prisma history in both directions but requires byte-identical image artifacts', async () => {
+    const migrations = join(fixture, 'migrations');
+    const originals = new Map();
+    const out = join(dir, 'line-ending-backups');
+    const args = ['--output-dir', out, '--migrations-dir', migrations, '--schema-reviewed'];
+    const crlfDatabase = 'brewlite_crlf_test';
+    const runCrlfDatabase = () => exec(process.execPath, [
+      join(root, 'scripts/db/migrate.mjs'), '--project-name', project, '--compose-file', composeFile,
+      '--database', crlfDatabase, ...args,
+    ], { env: { ...env, TEST_MIGRATE_DATABASE: crlfDatabase } });
+    try {
+      for (const entry of await readdir(migrations, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const path = join(migrations, entry.name, 'migration.sql');
+        const original = await readFile(path);
+        originals.set(path, original);
+        const lf = original.toString('latin1').replaceAll('\r\n', '\n');
+        await writeFile(path, Buffer.from(lf.replaceAll('\n', '\r\n'), 'latin1'));
+      }
+      // Existing LF history, CRLF checkout and CRLF image.
+      ok(script('migrate', '--database', 'brewlite_migrate_test', ...args));
+      ok(compose('exec', '-T', 'db', 'createdb', '-U', 'brewlite', crlfDatabase));
+      ok(runCrlfDatabase()); // Prisma itself records CRLF checksums; no history edits.
+      const applied = JSON.parse(sql(crlfDatabase, 'SELECT json_agg(t) FROM (SELECT migration_name, checksum FROM "_prisma_migrations") t'));
+      assert.equal(applied.length, 16);
+      for (const row of applied) {
+        assert.equal(row.checksum, createHash('sha256').update(await readFile(join(migrations, row.migration_name, 'migration.sql'))).digest('hex'));
+      }
+      const crlfReview = join(dir, 'crlf-reviewed-migrations');
+      await cp(migrations, crlfReview, { recursive: true });
+      for (const [path, original] of originals) await writeFile(path, original);
+      ok(runCrlfDatabase()); // Production regression: CRLF history, LF checkout/image.
+      const before = await readdir(out);
+      const mismatch = script('migrate', '--database', 'brewlite_migrate_test', '--output-dir', out,
+        '--migrations-dir', crlfReview, '--schema-reviewed');
+      assert.notEqual(mismatch.status, 0);
+      assert.match(mismatch.stderr, /Migration trong image khác/);
+      assert.deepEqual(await readdir(out), before); // Image mismatch stops before backup/deploy.
+      assert.equal(sql(crlfDatabase, 'SELECT count(*) FROM "SeedRun"'), '0');
+    } finally {
+      for (const [path, original] of originals) await writeFile(path, original);
+    }
   });
 
   it('migration refuses artifact mismatch and modified applied checksums before deployment', async () => {

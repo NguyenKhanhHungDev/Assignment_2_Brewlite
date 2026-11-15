@@ -107,8 +107,8 @@ Service `migrate` phải cấu hình `DATABASE_URL` trỏ tới chính database 
 
 Quy trình thực thi:
 
-1. Kiểm PostgreSQL 17 và lịch sử `_prisma_migrations`: không có migration lỗi/chưa hoàn tất; checksum migration đã áp dụng khớp chuỗi Git.
-2. Kiểm danh sách/checksum migration trong image giống file đã review ở checkout. `--migrations-dir` chỉ dùng khi nguồn review được đặt tại đường dẫn riêng.
+1. Kiểm PostgreSQL 17 và lịch sử `_prisma_migrations`: không có migration lỗi/chưa hoàn tất; tên và thứ tự migration phải khớp chuỗi Git. SHA-256 được đối chiếu với byte gốc hoặc biến thể chỉ đổi LF/CRLF của cùng file SQL; không bỏ qua thay đổi SQL, khoảng trắng, BOM hay newline cuối file. Không sửa migration đã áp dụng hoặc checksum trong DB.
+2. Kiểm danh sách/checksum migration trong image giống file đã review ở checkout **chính xác theo byte**, kể cả định dạng xuống dòng. Chỉ đối chiếu lịch sử DB mới chấp nhận biến thể LF/CRLF. `--migrations-dir` chỉ dùng khi nguồn review được đặt tại đường dẫn riêng.
 3. Gọi `migrate status` trước. Exit 1 do còn migration pending được chấp nhận sau khi lịch sử/checksum đã kiểm tra; không bỏ qua failed history.
 4. Tạo và kiểm chứng backup đầy đủ. Backup lỗi → không deploy.
 5. `migrate deploy`; lỗi → exit khác 0, giữ backup, không cập nhật API/Web.
@@ -170,6 +170,8 @@ Thắng cần:
 Compose prod/CD/EC2 thật vẫn thuộc #37/#39 và owner Thắng; kết quả test local của #38 không chứng minh hạ tầng production đã được triển khai.
 
 ## 9. Chạy lại kiểm thử
+
+Test checksum/lịch sử không cần Docker: `node --test scripts/db/migration-history.test.mjs`. Lệnh `npm run test:db-operations` chạy cả test này và suite Docker bên dưới. Suite Docker kiểm tra lịch sử LF/CRLF do Prisma tự tạo trên DB test, đồng thời bảo đảm image khác byte với artifact review vẫn bị từ chối trước backup/deploy.
 
 ```bash
 docker build --target migration --tag brewlite-db-ops-migrate:test apps/api
