@@ -186,7 +186,11 @@ describe.skipIf(!target)('Admin operations PostgreSQL + HTTP', () => {
       ['PENDING', 'UNKNOWN'],
       ['PENDING', 'READY'],
       ['SUCCESS', 'READY'],
+      ['SUCCESS', 'UNKNOWN'],
+      ['SUCCESS', 'CREATING'],
       ['RECONCILIATION_REQUIRED', 'READY'],
+      ['RECONCILIATION_REQUIRED', 'UNKNOWN'],
+      ['RECONCILIATION_REQUIRED', 'CREATING'],
     ]) {
       const row = await order();
       await payment(row.id, status, creation);
@@ -207,6 +211,43 @@ describe.skipIf(!target)('Admin operations PostgreSQL + HTTP', () => {
       cancel.cancel(failed.id, adminId, { reason: 'Khách hủy' }),
     ).resolves.toMatchObject({ status: 'CANCELLED' });
   });
+  it.each([
+    ['UNKNOWN', 'FAILED'],
+    ['CREATING', 'FAILED'],
+    ['UNKNOWN', 'CANCELLED'],
+    ['CREATING', 'CANCELLED'],
+  ] as const)(
+    'allows cancellation after gateway confirms %s creation as %s without releasing stock twice',
+    async (creationStatus, outcome) => {
+      const row = await order();
+      const attempt = await payment(row.id, 'PENDING', creationStatus);
+
+      await paymentStore.applyZalopayResolution({
+        transactionRef: attempt.transactionRef!,
+        appId: 123,
+        amountVnd: 10000,
+        outcome,
+      });
+      expect(await db.payment.findUnique({ where: { id: attempt.id } }))
+        .toMatchObject({ status: outcome, creationStatus });
+      expect(await db.order.findUnique({ where: { id: row.id } }))
+        .toMatchObject({ status: 'PAYMENT_FAILED' });
+
+      await expect(cancel.cancel(row.id, adminId, { reason: ' Đã xác minh thất bại ' }))
+        .resolves.toMatchObject({
+          status: 'CANCELLED',
+          cancellationReason: 'Đã xác minh thất bại',
+          cancelledById: adminId,
+          cancelledAt: expect.any(Date),
+        });
+      await expect(cancel.cancel(row.id, adminId, { reason: 'Hủy lần nữa' }))
+        .rejects.toMatchObject({ status: 409 });
+      expect(await db.ingredient.findUnique({ where: { id: row.ingredientId } }))
+        .toMatchObject({ stock: 100, reserved: 0, version: 1 });
+      expect(await db.orderIngredient.findFirst({ where: { orderId: row.id } }))
+        .toMatchObject({ status: 'RELEASED' });
+    },
+  );
   it('serializes cancellation versus creation and settlement using the same Order lock', async () => {
     const row = await order();
     const result = await Promise.allSettled([
@@ -301,7 +342,8 @@ describe.skipIf(!target)('Admin operations PostgreSQL + HTTP', () => {
     const absent = await request(app.getHttpServer())
       .get('/admin/orders')
       .set(admin())
-      .query({ search: String(a.id), paymentStatus: 'NONE' })
+      // Search is substring-based; an ID can also match unrelated older rows.
+      .query({ search: marker, paymentStatus: 'NONE' })
       .expect(200);
     expect(absent.body.total).toBe(0);
   });

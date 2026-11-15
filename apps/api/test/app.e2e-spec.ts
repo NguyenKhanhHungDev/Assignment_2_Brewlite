@@ -1,10 +1,11 @@
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-vitest-e2e';
 
+import { OrdersExpirationService } from '../src/orders/orders.expiration.service.js';
 import { AppModule } from '../src/app.module.js';
 import { HealthDatabase } from '../src/health/health.database.js';
 import { RecipesPrismaAdapter } from '../src/recipes/recipes.prisma-adapter.js';
@@ -19,8 +20,15 @@ const recipe = {
 describe('Products & Health HTTP (mock repository, no database)', () => {
   let app: INestApplication;
   let dbHealthy = true;
+  // Guard against accidental DB work while testing HTTP with fake stores.
+  const expireBatch = vi.spyOn(OrdersExpirationService.prototype, 'expireBatch')
+    .mockResolvedValue(0);
+
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
+      // These suites exercise HTTP handlers; background DB jobs belong to integration tests.
+      .overrideProvider(OrdersExpirationService)
+      .useValue({})
       .overrideProvider(RecipesPrismaAdapter)
       .useValue({
         findAll: async () => [recipe, { ...recipe, id: 2, isActive: false }],
@@ -36,7 +44,11 @@ describe('Products & Health HTTP (mock repository, no database)', () => {
     app = module.createNestApplication();
     await app.init();
   });
-  afterAll(async () => { await app?.close(); });
+  afterAll(async () => { await app?.close(); expireBatch.mockRestore(); });
+
+  it('does not start the database-backed expiration job', () => {
+    expect(expireBatch).not.toHaveBeenCalled();
+  });
 
   it('serves GET /health as 200 when database is reachable and 503 when down', async () => {
     dbHealthy = true;
