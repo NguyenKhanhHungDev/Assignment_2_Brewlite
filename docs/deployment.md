@@ -62,23 +62,3 @@ Quy trình và script Task 5.3.2: [backup, restore, migration và rollback](data
 | Caddy, DNS, registry, CI/CD, backup/log | Cấu hình cần bổ sung trên repo mới và môi trường triển khai |
 
 Trước nghiệm thu: kiểm tra tài khoản/chi phí AWS, cập nhật tài nguyên và URL thật, cấu hình TLS/secret/backup/log, kiểm chứng health/smoke và ánh xạ tới code mới. PWA và yêu cầu Ví/Thẻ Sandbox được kiểm chứng khi hoàn thiện chức năng.
-
-
-## Hiện thực triển khai & CD (Task 5.3.1 & Task 5.4.1)
-
-Các tệp triển khai và tự động hóa phát hành trong repository gồm:
-
-- [`compose.prod.yaml`](../compose.prod.yaml): Định nghĩa 5 service (`db`, `migrate`, `api`, `web`, `caddy`). Chỉ `caddy` mở port `80`/`443`; `db`, `api` và `web` chỉ giao tiếp nội bộ qua Docker network, `RUN_SEED` mặc định `false`.
-- [`deploy/caddy/Caddyfile`](../deploy/caddy/Caddyfile): Reverse proxy HTTPS cho `{$APP_DOMAIN}`, định tuyến `/health` và `/payments/zalopay/callback` sang `api:3001`, toàn bộ route còn lại sang `web:3000`, đồng thời chuyển `X-BrewLite-Real-IP` kèm `X-BrewLite-Proxy-Token`.
-- [`apps/web/server.mjs`](../apps/web/server.mjs): Chỉ tin cậy `x-brewlite-real-ip` khi `x-brewlite-proxy-token` khớp `CADDY_PROXY_SECRET` bằng so sánh `timingSafeEqual`; trong mọi trường hợp khác tiếp tục xóa/không tin cậy header giả mạo từ client.
-- [`.env.prod.example`](../.env.prod.example): Mẫu biến môi trường đặt tại `/opt/brewlite/.env.prod` trên EC2 (không commit secret thật vào Git).
-- [`deploy/scripts/deploy.sh`](../deploy/scripts/deploy.sh) & [`deploy/scripts/rollback.sh`](../deploy/scripts/rollback.sh): Kịch bản deploy kiểm tra secret không rỗng, xác nhận PostgreSQL không public port `5432`, backup `pg_dump` trước khi chạy `migrate`, dừng triển khai nếu migration lỗi, giữ `.previous-release` để rollback.
-- [`.github/workflows/cd.yml`](../.github/workflows/cd.yml): Pipeline CD chạy trên `push` vào `main` và `workflow_dispatch` (tùy chọn `run_seed`), gồm 3 job: `quality-gate` -> `build-and-push` (`linux/amd64` lên GHCR theo `github.sha`) -> `deploy` (SSH/SCP sang EC2, chạy `deploy.sh`, logout GHCR, chạy `scripts/check-compose.mjs` qua HTTPS và kiểm tra đóng port `5432`).
-
-### Chuẩn bị một lần trên AWS EC2 (Ubuntu 24.04 LTS x86_64)
-
-1. Mở Security Group inbound các cổng `22` (SSH), `80` (HTTP), `443` (HTTPS); tuyệt đối không mở `5432`.
-2. Cài Docker Engine + Docker Compose plugin, thêm user SSH (ví dụ `ubuntu`) vào nhóm `docker`, tạo swap 2 GiB nếu chạy instance RAM nhỏ (ví dụ `t3.small` / `t2.micro`).
-3. Tạo thư mục `/opt/brewlite`, copy `.env.prod.example` thành `/opt/brewlite/.env.prod`, sinh secret ngẫu nhiên mạnh (`openssl rand -hex 32`) cho `DB_PASSWORD`, `JWT_SECRET`, `BFF_PROXY_SECRET`, `CADDY_PROXY_SECRET`, đặt `APP_DOMAIN` (ví dụ `brewlite-a2.duckdns.org`) và `IMAGE_REGISTRY_OWNER`.
-4. Trỏ DuckDNS (`brewlite-a2.duckdns.org`) về Public IP của EC2 (khuyến nghị gắn Elastic IP hoặc cron cập nhật DuckDNS nếu EC2 có thể dừng/khởi động lại).
-5. Cấu hình GitHub Environment `production` (hoặc Repository Secrets): `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `APP_DOMAIN` (tùy chọn `EC2_PORT`, `EC2_DEPLOY_PATH`). Lần deploy đầu có thể kích hoạt `workflow_dispatch` với `run_seed=true` để seed dữ liệu mẫu một lần.
